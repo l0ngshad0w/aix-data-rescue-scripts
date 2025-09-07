@@ -1,8 +1,9 @@
-# System/Editor
+# OS & editor
 .DS_Store
 Thumbs.db
-.vscode/
 *.code-workspace
+.vscode/
+.idea/
 
 # Logs & temp
 *.log
@@ -16,14 +17,34 @@ tmp/
 secrets/
 *.key
 *.pem
+*.pfx
+**/certs/**
 
-# Build/output
+# Build / publish outputs
+publish/
 dist/
 build/
-publish/
+out/
 *.zip
 *.7z
 
-# Python/node (if ever used)
+# Database dumps & large binaries (track in artifact storage, not Git)
+*.bak
+*.mdf
+*.ldf
+*.bacpac
+*.dacpac
+*.iso
+*.vdi
+*.vmdk
+
+# Python / Node (if used)
 __pycache__/
 node_modules/
+
+# Tool-specific
+# Generated reports or exports can go to ./temp and stay ignored
+**/export/**
+
+# Keep placeholder files (allow .gitkeep to pass)
+!**/.gitkeep

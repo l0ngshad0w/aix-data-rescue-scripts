@@ -1,0 +1,22 @@
+aix-data-rescue-scripts-starter/
+├── config/
+│   ├── .env.example
+│   └── .gitkeep
+├── docs/
+│   ├── .gitkeep
+│   └── Runbook.md
+├── logs/
+│   └── .gitkeep
+├── scripts/
+│   ├── bash/
+│   │   └── .gitkeep
+│   ├── powershell/
+│   │   └── .gitkeep
+│   └── sql/
+│       └── .gitkeep
+├── temp/
+│   └── .gitkeep
+├── tools/
+│   └── .gitkeep
+├── .gitignore
+└── README.md
