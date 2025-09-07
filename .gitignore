@@ -1,0 +1,29 @@
+# System/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.code-workspace
+
+# Logs & temp
+*.log
+logs/
+temp/
+tmp/
+
+# Environment & secrets
+.env
+.env.*
+secrets/
+*.key
+*.pem
+
+# Build/output
+dist/
+build/
+publish/
+*.zip
+*.7z
+
+# Python/node (if ever used)
+__pycache__/
+node_modules/
