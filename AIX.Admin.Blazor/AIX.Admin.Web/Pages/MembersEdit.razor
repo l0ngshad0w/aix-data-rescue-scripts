@@ -1,0 +1,76 @@
+@using System.ComponentModel.DataAnnotations
+@inject AppDbContext Db
+
+<EditForm Model="Model" OnValidSubmit="Save">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+	<div class="form-grid">
+		<label>Member #</label>
+		<InputText @bind-Value="Model.MemberNumber" />
+
+		<label>Last name</label>
+		<InputText @bind-Value="Model.LastName" />
+
+		<label>First name</label>
+		<InputText @bind-Value="Model.FirstName" />
+
+		<label>Address 1</label>
+		<InputText @bind-Value="Model.Address1" />
+
+		<label>Address 2</label>
+		<InputText @bind-Value="Model.Address2" />
+
+		<label>City</label>
+		<InputText @bind-Value="Model.City" />
+
+		<label>State</label>
+		<InputText @bind-Value="Model.State" />
+
+		<label>Postal Code</label>
+		<InputText @bind-Value="Model.PostalCode" />
+
+		<label>Birth date</label>
+		<InputDate @bind-Value="Model.BirthDate" />
+
+		<label>Phone</label>
+		<InputText @bind-Value="Model.Phone" />
+
+		<label>Email</label>
+		<InputText @bind-Value="Model.Email" />
+
+		<label>Status</label>
+		<InputText @bind-Value="Model.Status" />
+
+		<label>Join date</label>
+		<InputDate @bind-Value="Model.JoinDate" />
+
+		<label>Expire date</label>
+		<InputDate @bind-Value="Model.ExpireDate" />
+	</div>
+    <div class="buttons">
+        <button type="submit">Save</button>
+        <button type="button" @onclick="OnCancel">Cancel</button>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public Member Model { get; set; } = default!;
+    [Parameter] public EventCallback OnSaved { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    async Task Save()
+    {
+        if (Model.Id == 0)
+        {
+            Db.Members.Add(Model);
+        }
+        else
+        {
+            Model.UpdatedUtc = DateTime.UtcNow;
+            Db.Members.Update(Model);
+        }
+        await Db.SaveChangesAsync();
+        if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
+    }
+}

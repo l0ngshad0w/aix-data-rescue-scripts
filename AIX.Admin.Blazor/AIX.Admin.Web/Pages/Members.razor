@@ -1,0 +1,107 @@
+@page "/members"
+@inject AppDbContext Db
+
+<h1>Members</h1>
+
+<input placeholder="Search name or number..." @bind="search" @bind:event="oninput" />
+<button @onclick="Load">Search</button>
+<button @onclick="NewMember">New</button>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Member #</th>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (members is null)
+        {
+            <tr><td colspan="6">Loading…</td></tr>
+        }
+        else if (members.Count == 0)
+        {
+            <tr><td colspan="6">No members found.</td></tr>
+        }
+        else
+        {
+            @foreach (var m in members)
+            {
+                <tr>
+                    <td>@m.Id</td>
+                    <td>@m.MemberNumber</td>
+                    <td>@m.LastName, @m.FirstName</td>
+                    <td>@m.Phone</td>
+                    <td>@m.Email</td>
+                    <td>
+                        <button @onclick="() => Edit(m.Id)">Edit</button>
+                        <button @onclick="() => Delete(m.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@if (editing != null)
+{
+    <MembersEdit Model="editing" OnSaved="OnSaved" OnCancel="() => editing = null" />
+}
+
+@code {
+    string search = string.Empty;
+    List<Member>? members;
+    Member? editing;
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    async Task<List<Member>> Query()
+    {
+        var q = Db.Members.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var s = search.Trim();
+            q = q.Where(m => m.MemberNumber.Contains(s) ||
+                             m.LastName.Contains(s) ||
+                             m.FirstName.Contains(s));
+        }
+        return await q.OrderBy(m => m.LastName).ThenBy(m => m.FirstName).Take(200).ToListAsync();
+    }
+
+    async Task Load()
+    {
+        members = await Query();
+        StateHasChanged();
+    }
+
+    void NewMember()
+    {
+        editing = new Member { MemberNumber = "", FirstName = "", LastName = "" };
+    }
+
+    async Task Edit(int id)
+    {
+        editing = await Db.Members.FindAsync(id);
+    }
+
+    async Task Delete(int id)
+    {
+        var m = await Db.Members.FindAsync(id);
+        if (m is not null)
+        {
+            Db.Members.Remove(m);
+            await Db.SaveChangesAsync();
+            await Load();
+        }
+    }
+
+    async Task OnSaved()
+    {
+        editing = null;
+        await Load();
+    }
+}

@@ -1,0 +1,15 @@
+
+body { font-family: system-ui, sans-serif; margin: 0; }
+.page { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+.sidebar { background: #1f2937; color: #fff; padding: 1rem; }
+.sidebar a { color: #fff; text-decoration: none; }
+main { background: #f9fafb; }
+.top-row { background: #fff; border-bottom: 1px solid #e5e7eb; height: 56px; display:flex; align-items:center; }
+.content { padding: 1rem; }
+table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+th, td { border-bottom: 1px solid #e5e7eb; padding: .5rem; text-align: left; }
+input, button { padding: .5rem; margin-right: .5rem; }
+.form-grid { display: grid; grid-template-columns: 160px 1fr; gap: .5rem .75rem; margin-top: 1rem; }
+.buttons { margin-top: 1rem; }
+nav ul { list-style: none; padding-left: 0; display: grid; gap: .5rem; }
+nav li { }

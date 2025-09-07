@@ -48,3 +48,33 @@ node_modules/
 
 # Keep placeholder files (allow .gitkeep to pass)
 !**/.gitkeep
+
+# Build outputs
+**/bin/
+**/obj/
+
+# IIS publish outputs (don’t commit server drops)
+C:/ChurchApp/
+**/publish/
+
+# IDE cruft
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Logs / temp
+*.log
+*.tmp
+*.temp
+
+# Secrets / local config (keep prod config in server only)
+**/appsettings.Development.json
+# If you create appsettings.Local.json, ignore it:
+**/appsettings.Local.json
+
+# Node/bundler (if added later)
+node_modules/
+dist/
