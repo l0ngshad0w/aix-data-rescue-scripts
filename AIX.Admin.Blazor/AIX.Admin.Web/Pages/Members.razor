@@ -1,11 +1,21 @@
-@page "/members"
-@inject AppDbContext Db
+﻿@page "/members"
+@using Microsoft.EntityFrameworkCore
+@inject AIX.Admin.Web.Data.AppDbContext Db
 
 <h1>Members</h1>
 
-<input placeholder="Search name or number..." @bind="search" @bind:event="oninput" />
+<input placeholder="Search name, email, or #"
+       @bind="search" @bind:event="oninput" />
 <button @onclick="Load">Search</button>
 <button @onclick="NewMember">New</button>
+
+@if (!string.IsNullOrWhiteSpace(errorMessage))
+{
+    <div style="background:#fee;border:1px solid #f99;padding:.5rem;margin:.5rem .25rem;">
+        <strong>Error:</strong>
+        <pre style="white-space:pre-wrap;margin:0">@errorMessage</pre>
+    </div>
+}
 
 <table>
     <thead>
@@ -13,90 +23,103 @@
             <th>#</th>
             <th>Member #</th>
             <th>Name</th>
+            <th>City/State</th>
             <th>Phone</th>
             <th>Email</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-        @if (members is null)
+    @if (members is null)
+    {
+        <tr><td colspan="7">Loading…</td></tr>
+    }
+    else if (members.Count == 0)
+    {
+        <tr><td colspan="7">No members found.</td></tr>
+    }
+    else
+    {
+        @foreach (var m in members)
         {
-            <tr><td colspan="6">Loading…</td></tr>
+            <tr>
+                <td>@m.MemberNo</td>
+                <td>@m.MemberNo</td>
+                <td>@m.LastName, @m.FirstName</td>
+                <td>@m.CityState</td>
+                <td>@(string.IsNullOrWhiteSpace(m.AreaCode) ? m.PhoneNo : $"({m.AreaCode}) {m.PhoneNo}")</td>
+                <td>@m.EmailAdr</td>
+                <td>
+                    <button @onclick="() => Edit(m.MemberNo)">Edit</button>
+                    <button @onclick="() => Delete(m.MemberNo)">Delete</button>
+                </td>
+            </tr>
         }
-        else if (members.Count == 0)
-        {
-            <tr><td colspan="6">No members found.</td></tr>
-        }
-        else
-        {
-            @foreach (var m in members)
-            {
-                <tr>
-                    <td>@m.Id</td>
-                    <td>@m.MemberNumber</td>
-                    <td>@m.LastName, @m.FirstName</td>
-                    <td>@m.Phone</td>
-                    <td>@m.Email</td>
-                    <td>
-                        <button @onclick="() => Edit(m.Id)">Edit</button>
-                        <button @onclick="() => Delete(m.Id)">Delete</button>
-                    </td>
-                </tr>
-            }
-        }
+    }
     </tbody>
 </table>
 
-@if (editing != null)
+@if (editing is not null)
 {
     <MembersEdit Model="editing" OnSaved="OnSaved" OnCancel="() => editing = null" />
 }
 
 @code {
     string search = string.Empty;
-    List<Member>? members;
-    Member? editing;
+    List<AIX.Admin.Web.Data.Entities.Member>? members;
+    AIX.Admin.Web.Data.Entities.Member? editing;
+    string? errorMessage;
 
     protected override async Task OnInitializedAsync() => await Load();
 
-    async Task<List<Member>> Query()
+    async Task<List<AIX.Admin.Web.Data.Entities.Member>> Query()
     {
-        var q = Db.Members.AsQueryable();
+        var q = Db.Members.AsNoTracking();
+
         if (!string.IsNullOrWhiteSpace(search))
         {
             var s = search.Trim();
-            q = q.Where(m => m.MemberNumber.Contains(s) ||
-                             m.LastName.Contains(s) ||
-                             m.FirstName.Contains(s));
+            if (int.TryParse(s, out var num))
+                q = q.Where(m => m.MemberNo == num);
+            else
+                q = q.Where(m =>
+                    (m.LastName ?? "").Contains(s) ||
+                    (m.FirstName ?? "").Contains(s) ||
+                    (m.EmailAdr ?? "").Contains(s));
         }
-        return await q.OrderBy(m => m.LastName).ThenBy(m => m.FirstName).Take(200).ToListAsync();
+
+        return await q.OrderBy(m => m.LastName)
+                      .ThenBy(m => m.FirstName)
+                      .Take(200)
+                      .ToListAsync();
     }
 
     async Task Load()
     {
-        members = await Query();
+        try
+        {
+            members = await Query();
+            errorMessage = null;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            members = new();
+        }
         StateHasChanged();
     }
 
-    void NewMember()
-    {
-        editing = new Member { MemberNumber = "", FirstName = "", LastName = "" };
-    }
+    void NewMember() => editing = new();
 
-    async Task Edit(int id)
-    {
-        editing = await Db.Members.FindAsync(id);
-    }
+    async Task Edit(int id) => editing = await Db.Members.FindAsync(id);
 
     async Task Delete(int id)
     {
         var m = await Db.Members.FindAsync(id);
-        if (m is not null)
-        {
-            Db.Members.Remove(m);
-            await Db.SaveChangesAsync();
-            await Load();
-        }
+        if (m is null) return;
+        Db.Members.Remove(m);
+        await Db.SaveChangesAsync();
+        await Load();
     }
 
     async Task OnSaved()

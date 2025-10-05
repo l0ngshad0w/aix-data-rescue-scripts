@@ -1,0 +1,23 @@
+using Microsoft.EntityFrameworkCore;
+using AIX.Admin.Web.Data;
+
+var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
+
+var conn = builder.Configuration.GetConnectionString("SqlExpress")
+           ?? "Server=.\\SQLEXPRESS;Database=ChurchDB;Trusted_Connection=True;TrustServerCertificate=True;";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(conn, sql =>
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        )
+    )
+);
+
+var app = builder.Build();
+// ... rest of file unchanged

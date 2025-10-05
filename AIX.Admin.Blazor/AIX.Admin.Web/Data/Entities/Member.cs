@@ -2,28 +2,32 @@ namespace AIX.Admin.Web.Data.Entities;
 
 public class Member
 {
-    public int Id { get; set; }
+    // PK (not identity)
+    public int MemberNo { get; set; }
 
-    public string MemberNumber { get; set; } = string.Empty;
+    public int? ZipCode { get; set; }
+    public short? ZipExt { get; set; }
 
-    public string LastName { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
+    public string? LastName { get; set; }
+    public string? FirstName { get; set; }
+    public string? MiddleName { get; set; }
 
-    public string? Address1 { get; set; }
-    public string? Address2 { get; set; }
-    public string? City { get; set; }
-    public string? State { get; set; }
-    public string? PostalCode { get; set; }
+    public string? Address { get; set; }
+    public string? CityState { get; set; }
 
-    public DateTime? BirthDate { get; set; }
+    public short? SameAdr { get; set; }   // stored as SMALLINT (0/1 typically)
 
-    public string? Phone { get; set; }
-    public string? Email { get; set; }
+    public int? CongrNum { get; set; }
+    public int? CongrNum2 { get; set; }
 
-    public string? Status { get; set; }           // e.g., Active, Inactive
-    public DateTime? JoinDate { get; set; }
-    public DateTime? ExpireDate { get; set; }
+    public DateTime? OrdinDate { get; set; }
+    public DateTime? SubscrDate { get; set; }
 
+    public string? AreaCode { get; set; }     // varchar(10)
+    public string? PhoneNo { get; set; }      // varchar(20)
+    public string? EmailAdr { get; set; }     // varchar(120)
+
+    // Optional bookkeeping
     public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedUtc { get; set; }
 }

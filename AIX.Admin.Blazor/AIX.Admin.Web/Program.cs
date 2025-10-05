@@ -1,15 +1,13 @@
-using Microsoft.EntityFrameworkCore;
-using AIX.Admin.Web.Data;
+﻿using Microsoft.EntityFrameworkCore;
+using AIX.Admin.Web;                // adjust namespace if needed
 
 var builder = WebApplication.CreateBuilder(args);
-
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-var conn = builder.Configuration.GetConnectionString("SqlExpress")
-           ?? "Server=.\\SQLEXPRESS;Database=AixRescue;Trusted_Connection=True;TrustServerCertificate=True;";
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(conn));
+// ✅ EF Core DbContext factory (uses ConnectionStrings:DefaultConnection)
+builder.Services.AddDbContextFactory<AIX.Admin.Web.AIXAdminContext>(opt =>
+    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
@@ -22,8 +20,6 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-
-app.MapBlazorHub();
-app.MapFallbackToPage("/_Host");
-
+app.MapBlazorHub();                 // Blazor Server
+app.MapFallbackToPage("/_Host");    // Razor Pages fallback
 app.Run();

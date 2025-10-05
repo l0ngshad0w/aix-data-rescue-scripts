@@ -1,76 +1,87 @@
-@using System.ComponentModel.DataAnnotations
+﻿@using System.ComponentModel.DataAnnotations
 @inject AppDbContext Db
 
 <EditForm Model="Model" OnValidSubmit="Save">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-	<div class="form-grid">
-		<label>Member #</label>
-		<InputText @bind-Value="Model.MemberNumber" />
+    <div class="form-grid">
+        <label>Member #</label>
+        <InputNumber @bind-Value="Model.MemberNo" />
 
-		<label>Last name</label>
-		<InputText @bind-Value="Model.LastName" />
+        <label>Last name</label>
+        <InputText @bind-Value="Model.LastName" />
 
-		<label>First name</label>
-		<InputText @bind-Value="Model.FirstName" />
+        <label>First name</label>
+        <InputText @bind-Value="Model.FirstName" />
 
-		<label>Address 1</label>
-		<InputText @bind-Value="Model.Address1" />
+        <label>Middle name</label>
+        <InputText @bind-Value="Model.MiddleName" />
 
-		<label>Address 2</label>
-		<InputText @bind-Value="Model.Address2" />
+        <label>Address</label>
+        <InputText @bind-Value="Model.Address" />
 
-		<label>City</label>
-		<InputText @bind-Value="Model.City" />
+        <label>City/State</label>
+        <InputText @bind-Value="Model.CityState" />
 
-		<label>State</label>
-		<InputText @bind-Value="Model.State" />
+        <label>Zip code</label>
+        <InputNumber @bind-Value="Model.ZipCode" />
 
-		<label>Postal Code</label>
-		<InputText @bind-Value="Model.PostalCode" />
+        <label>Zip ext</label>
+        <InputNumber @bind-Value="Model.ZipExt" />
 
-		<label>Birth date</label>
-		<InputDate @bind-Value="Model.BirthDate" />
+        <label>Same address (0/1)</label>
+        <InputNumber @bind-Value="Model.SameAdr" />
 
-		<label>Phone</label>
-		<InputText @bind-Value="Model.Phone" />
+        <label>Congregation #</label>
+        <InputNumber @bind-Value="Model.CongrNum" />
 
-		<label>Email</label>
-		<InputText @bind-Value="Model.Email" />
+        <label>Congregation #2</label>
+        <InputNumber @bind-Value="Model.CongrNum2" />
 
-		<label>Status</label>
-		<InputText @bind-Value="Model.Status" />
+        <label>Ordination date</label>
+        <InputDate @bind-Value="Model.OrdinDate" />
 
-		<label>Join date</label>
-		<InputDate @bind-Value="Model.JoinDate" />
+        <label>Subscription date</label>
+        <InputDate @bind-Value="Model.SubscrDate" />
 
-		<label>Expire date</label>
-		<InputDate @bind-Value="Model.ExpireDate" />
-	</div>
+        <label>Area code</label>
+        <InputText @bind-Value="Model.AreaCode" />
+
+        <label>Phone</label>
+        <InputText @bind-Value="Model.PhoneNo" />
+
+        <label>Email</label>
+        <InputText @bind-Value="Model.EmailAdr" />
+    </div>
+
     <div class="buttons">
         <button type="submit">Save</button>
         <button type="button" @onclick="OnCancel">Cancel</button>
     </div>
 </EditForm>
 
-@code {
-    [Parameter] public Member Model { get; set; } = default!;
-    [Parameter] public EventCallback OnSaved { get; set; }
-    [Parameter] public EventCallback OnCancel { get; set; }
 
-    async Task Save()
-    {
-        if (Model.Id == 0)
-        {
-            Db.Members.Add(Model);
-        }
-        else
-        {
-            Model.UpdatedUtc = DateTime.UtcNow;
-            Db.Members.Update(Model);
-        }
-        await Db.SaveChangesAsync();
-        if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
-    }
+	@code {
+		[Parameter] public Member Model { get; set; } = default!;
+		[Parameter] public EventCallback OnSaved { get; set; }
+		[Parameter] public EventCallback OnCancel { get; set; }
+
+		async Task Save()
+		{
+			var exists = await Db.Members.AnyAsync(m => m.MemberNo == Model.MemberNo);
+			if (!exists)
+			{
+				Db.Members.Add(Model);
+			}
+			else
+			{
+				Model.UpdatedUtc = DateTime.UtcNow;
+				Db.Members.Update(Model);
+			}
+
+			await Db.SaveChangesAsync();
+			if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
+		}
+	}
 }
