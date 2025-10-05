@@ -1,0 +1,30 @@
+6) Sanity checks & gotchas (based on your earlier errors)
+
+500.30 / app failed to start
+Almost always the Hosting Bundle mismatch or missing runtime. Install the Hosting Bundle for your exact major SDK (e.g., .NET 8). Then iisreset.
+
+“EnableRetryOnFailure” tip you saw earlier
+We baked this into Program.cs via AddDbContextFactory so transient SQL hiccups won’t kill the app.
+
+App pool CLR should be “No Managed Code.”
+ASP.NET Core runs out-of-process behind IIS; the in-process CLR setting is not used for Core apps.
+
+Permissions
+Make sure IIS AppPool\ChurchAppPool has Modify on D:\ChurchApp\App\publish (the script sets this).
+
+Port already in use
+If 8080 collides, either stop the other binding or change $Port in provision-iis.ps1 and re-run.
+
+SQL connection
+We default to Server=localhost;Database=ChurchApp;Trusted_Connection=True;.... If your instance name is non-default, update the connection string (e.g., Server=localhost\SQLEXPRESS).
+
+7) Optional: quick “Members” placeholder page
+
+Just to prove routing works, drop a page in Pages/Members.razor:
+
+@page "/members"
+<h3>Members</h3>
+<p>Members page placeholder.  Data wiring coming next.</p>
+
+
+Run publish-and-recycle.ps1 and browse http://localhost:8080/members.

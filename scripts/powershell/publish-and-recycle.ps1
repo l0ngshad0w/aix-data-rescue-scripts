@@ -114,11 +114,18 @@ function Ensure-AspNetCoreWebConfig($PublishDir, $dllName) {
       [xml]$xml = Get-Content $webConfig -Raw
       $ancm = $xml.configuration.'system.webServer'.aspNetCore
       if ($ancm) {
+<<<<<<< HEAD
         # Validate critical attributes
         $proc = $ancm.GetAttribute("processPath")
         $args = $ancm.GetAttribute("arguments")
         $host = $ancm.GetAttribute("hostingModel")
         if (($proc -eq "dotnet") -and ($args -eq ".\$dllName") -and ($host -eq "OutOfProcess")) {
+=======
+        $ancmProcessPath  = $ancm.GetAttribute("processPath")
+        $ancmArguments    = $ancm.GetAttribute("arguments")
+        $ancmHostingModel = $ancm.GetAttribute("hostingModel")
+        if (($ancmProcessPath -eq "dotnet") -and ($ancmArguments -eq ".\$dllName") -and ($ancmHostingModel -eq "OutOfProcess")) {
+>>>>>>> 936bc66375694fe210fbe5a6429a8e7a0b017d5e
           $needsRewrite = $false
         }
       }
