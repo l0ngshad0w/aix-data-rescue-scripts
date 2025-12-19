@@ -1,130 +1,145 @@
-﻿@page "/members"
-@using Microsoft.EntityFrameworkCore
-@inject AIX.Admin.Web.Data.AppDbContext Db
+﻿@* // =================================================================
+// SECTION 1: DIRECTIVES (Instructions for Blazor)
+// =================================================================
 
-<h1>Members</h1>
+// This MUST be the first line. It tells Blazor this is a page with the URL "/members".
+ *@
+ @page "/members"
 
-<input placeholder="Search name, email, or #"
-       @bind="search" @bind:event="oninput" />
-<button @onclick="Load">Search</button>
-<button @onclick="NewMember">New</button>
+@*  // This tells the page where to find your auto-generated data classes (like the Member class).
+  // *** Replace "YourProjectName" with the actual name of your project. *** *@
+@using AIX.Admin.Web.Data
 
-@if (!string.IsNullOrWhiteSpace(errorMessage))
+@*// This asks Blazor to "inject" or provide the database connection service.
+// *** Replace "YourDbContext" with the actual name of your DbContext file. ***  *@
+@inject AppDbContext DbContext
+
+@*
+// =================================================================
+// SECTION 2: HTML & MUD BLazor COMPONENTS (What the user sees)
+// =================================================================
+*@
+<MudText Typo="Typo.h4">Church Members</MudText>
+
+
+
+@* // This logic checks if the data has been loaded from the database yet. 
+@if (memberList == null)
 {
-    <div style="background:#fee;border:1px solid #f99;padding:.5rem;margin:.5rem .25rem;">
-        <strong>Error:</strong>
-        <pre style="white-space:pre-wrap;margin:0">@errorMessage</pre>
-    </div>
+    // If 'memberList' is null, it means we're still loading, so show a spinner.
+    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
 }
-
-<table>
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Member #</th>
-            <th>Name</th>
-            <th>City/State</th>
-            <th>Phone</th>
-            <th>Email</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-    @if (members is null)
-    {
-        <tr><td colspan="7">Loading…</td></tr>
-    }
-    else if (members.Count == 0)
-    {
-        <tr><td colspan="7">No members found.</td></tr>
-    }
-    else
-    {
-        @foreach (var m in members)
-        {
-            <tr>
-                <td>@m.MemberNo</td>
-                <td>@m.MemberNo</td>
-                <td>@m.LastName, @m.FirstName</td>
-                <td>@m.CityState</td>
-                <td>@(string.IsNullOrWhiteSpace(m.AreaCode) ? m.PhoneNo : $"({m.AreaCode}) {m.PhoneNo}")</td>
-                <td>@m.EmailAdr</td>
-                <td>
-                    <button @onclick="() => Edit(m.MemberNo)">Edit</button>
-                    <button @onclick="() => Delete(m.MemberNo)">Delete</button>
-                </td>
-            </tr>
-        }
-    }
-    </tbody>
-</table>
-
-@if (editing is not null)
+else
 {
-    <MembersEdit Model="editing" OnSaved="OnSaved" OnCancel="() => editing = null" />
-}
+*@    <MudPaper Class="pa-4 mb-4">
+        <MudGrid Spacing="2">
+            <MudItem xs="12" sm="6" md="3">
+                <MudTextField @bind-Value="searchLastName" Label="Last Name" Variant="Variant.Outlined" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudTextField @bind-Value="searchFirstName" Label="First Name" Variant="Variant.Outlined" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudTextField @bind-Value="searchEmail" Label="Email" Variant="Variant.Outlined" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" sm="6" md="3">
+                <MudTextField @bind-Value="searchZipCode" Label="Zip Code" Variant="Variant.Outlined" Clearable="true" />
+            </MudItem>
+            <MudItem xs="12" Class="d-flex justify-end">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="FilterMembers" Class="mr-2">Search</MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilter">Clear</MudButton>
+            </MudItem>
+        </MudGrid>
+    </MudPaper>
+    
+    // Once 'memberList' has data, show the MudTable grid.
+    <MudTable Items="@filteredMemberList" Hover="true" Striped="true" Dense="true">
+        <HeaderContent>
+            <MudTh>First Name</MudTh>
+            <MudTh>Last Name</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="First Name">@context.FirstName</MudTd>
+            <MudTd DataLabel="Last Name">@context.LastName</MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+
+
+@*
+// =================================================================
+// SECTION 3: C# LOGIC (The page's "brain")
+// =================================================================
+*@
 
 @code {
-    string search = string.Empty;
-    List<AIX.Admin.Web.Data.Entities.Member>? members;
-    AIX.Admin.Web.Data.Entities.Member? editing;
-    string? errorMessage;
+    // This list holds ALL members from the database and never changes.
+    private List<Member> allMembers;
 
-    protected override async Task OnInitializedAsync() => await Load();
+    // This list holds the members to be displayed in the table (after filtering).
+    private List<Member> filteredMemberList = new List<Member>();
 
-    async Task<List<AIX.Admin.Web.Data.Entities.Member>> Query()
+    // Variables to hold the text from our search boxes.
+    private string searchLastName = "";
+    private string searchFirstName = "";
+    private string searchEmail = "";
+    private string searchZipCode = "";
+
+    public Members(List<Member> allMembers)
     {
-        var q = Db.Members.AsNoTracking();
-
-        if (!string.IsNullOrWhiteSpace(search))
-        {
-            var s = search.Trim();
-            if (int.TryParse(s, out var num))
-                q = q.Where(m => m.MemberNo == num);
-            else
-                q = q.Where(m =>
-                    (m.LastName ?? "").Contains(s) ||
-                    (m.FirstName ?? "").Contains(s) ||
-                    (m.EmailAdr ?? "").Contains(s));
-        }
-
-        return await q.OrderBy(m => m.LastName)
-                      .ThenBy(m => m.FirstName)
-                      .Take(200)
-                      .ToListAsync();
+        this.allMembers = allMembers;
     }
 
-    async Task Load()
+    protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            members = await Query();
-            errorMessage = null;
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-            members = new();
-        }
-        StateHasChanged();
+        // 1. Load all members from the database into our master list.
+        allMembers = await DbContext.Members.ToListAsync();
+
+        // 2. Initially, the filtered list is the same as the master list.
+        filteredMemberList = allMembers;
     }
 
-    void NewMember() => editing = new();
-
-    async Task Edit(int id) => editing = await Db.Members.FindAsync(id);
-
-    async Task Delete(int id)
+    private void FilterMembers()
     {
-        var m = await Db.Members.FindAsync(id);
-        if (m is null) return;
-        Db.Members.Remove(m);
-        await Db.SaveChangesAsync();
-        await Load();
+        // Start with the full list of members.
+        var query = allMembers.AsQueryable();
+
+        // Apply filters one by one, only if the search box has text.
+        if (!string.IsNullOrWhiteSpace(searchLastName))
+        {
+            query = query.Where(m => m.LastName != null && m.LastName.Contains(searchLastName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchFirstName))
+        {
+            query = query.Where(m => m.FirstName != null && m.FirstName.Contains(searchFirstName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchEmail))
+        {
+            query = query.Where(m => m.EmailAdr != null && m.EmailAdr.Contains(searchEmail, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!string.IsNullOrWhiteSpace(searchZipCode))
+        {
+            query = query.Where(m => m.ZipCode != null && m.ZipCode.ToString().Contains(searchZipCode, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Update the list that the table is bound to. The UI will refresh automatically.
+        filteredMemberList = query.ToList();
     }
 
-    async Task OnSaved()
+    private void ClearFilter()
     {
-        editing = null;
-        await Load();
+        // Clear the search boxes.
+        searchLastName = "";
+        searchFirstName = "";
+        searchEmail = "";
+        searchZipCode = "";
+
+        // Reset the filtered list back to the full master list.
+        filteredMemberList = allMembers;
     }
 }

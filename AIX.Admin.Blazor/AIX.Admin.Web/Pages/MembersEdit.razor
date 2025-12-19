@@ -6,53 +6,62 @@
     <ValidationSummary />
 
     <div class="form-grid">
-        <label>Member #</label>
-        <InputNumber @bind-Value="Model.MemberNo" />
+            <label>Member # (business key)</label>
+            <InputNumber @bind-Value="Model.MemberNo" />
 
-        <label>Last name</label>
-        <InputText @bind-Value="Model.LastName" />
+            <label>Last name</label>
+            <InputText @bind-Value="Model.LastName" />
 
-        <label>First name</label>
-        <InputText @bind-Value="Model.FirstName" />
+            <label>First name</label>
+            <InputText @bind-Value="Model.FirstName" />
 
-        <label>Middle name</label>
-        <InputText @bind-Value="Model.MiddleName" />
+            <label>Middle name</label>
+            <InputText @bind-Value="Model.MiddleName" />
 
-        <label>Address</label>
-        <InputText @bind-Value="Model.Address" />
+            <label>Address 1</label>
+            <InputText @bind-Value="Model.Address1" />
 
-        <label>City/State</label>
-        <InputText @bind-Value="Model.CityState" />
+            <label>Address 2</label>
+            <InputText @bind-Value="Model.Address2" />
 
-        <label>Zip code</label>
-        <InputNumber @bind-Value="Model.ZipCode" />
+            <label>City</label>
+            <InputText @bind-Value="Model.City" />
 
-        <label>Zip ext</label>
-        <InputNumber @bind-Value="Model.ZipExt" />
+            <label>State</label>
+            <InputText @bind-Value="Model.State" />
 
-        <label>Same address (0/1)</label>
-        <InputNumber @bind-Value="Model.SameAdr" />
+            <label>Foreign address</label>
+            <InputText @bind-Value="Model.ForeignAddress" />
 
-        <label>Congregation #</label>
-        <InputNumber @bind-Value="Model.CongrNum" />
+            <label>Zip code</label>
+            <InputNumber @bind-Value="Model.ZipCode" />
 
-        <label>Congregation #2</label>
-        <InputNumber @bind-Value="Model.CongrNum2" />
+            <label>Zip ext</label>
+            <InputNumber @bind-Value="Model.ZipExt" />
 
-        <label>Ordination date</label>
-        <InputDate @bind-Value="Model.OrdinDate" />
+            <label>Same address (0/1)</label>
+            <InputNumber @bind-Value="Model.SameAdr" />
 
-        <label>Subscription date</label>
-        <InputDate @bind-Value="Model.SubscrDate" />
+            <label>Congregation #</label>
+            <InputNumber @bind-Value="Model.CongrNum" />
 
-        <label>Area code</label>
-        <InputText @bind-Value="Model.AreaCode" />
+            <label>Congregation #2</label>
+            <InputNumber @bind-Value="Model.CongrNum2" />
 
-        <label>Phone</label>
-        <InputText @bind-Value="Model.PhoneNo" />
+            <label>Ordination date</label>
+            <InputDate @bind-Value="Model.OrdinDate" />
 
-        <label>Email</label>
-        <InputText @bind-Value="Model.EmailAdr" />
+            <label>Subscription date</label>
+            <InputDate @bind-Value="Model.SubscrDate" />
+
+            <label>Area code</label>
+            <InputText @bind-Value="Model.AreaCode" />
+
+            <label>Phone</label>
+            <InputText @bind-Value="Model.PhoneNo" />
+
+            <label>Email</label>
+            <InputText @bind-Value="Model.EmailAdr" />
     </div>
 
     <div class="buttons">
@@ -69,19 +78,17 @@
 
 		async Task Save()
 		{
-			var exists = await Db.Members.AnyAsync(m => m.MemberNo == Model.MemberNo);
-			if (!exists)
-			{
-				Db.Members.Add(Model);
-			}
-			else
-			{
-				Model.UpdatedUtc = DateTime.UtcNow;
-				Db.Members.Update(Model);
-			}
-
-			await Db.SaveChangesAsync();
-			if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
+        // PK is identity: if 0 -> new, else update
+        if (Model.MemberPkId == 0)
+        {
+            Db.Members.Add(Model);
+        }
+        else
+        {
+            Db.Members.Update(Model);
+        }
+        await Db.SaveChangesAsync();
+        if (OnSaved.HasDelegate) await OnSaved.InvokeAsync();
 		}
 	}
 }

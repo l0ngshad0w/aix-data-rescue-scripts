@@ -1,16 +1,36 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using AIX.Admin.Web;                // adjust namespace if needed
+using AIX.Admin.Web.Data;
+using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Blazor services
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddDbContext<DbContext>(); // Your DbContext
 
-// ✅ EF Core DbContext factory (uses ConnectionStrings:DefaultConnection)
-builder.Services.AddDbContextFactory<AIX.Admin.Web.AIXAdminContext>(opt =>
-    opt.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddMudServices();
+
+//var app = builder.Build();
+
+// Connection string (matches appsettings.json key)
+var conn = builder.Configuration.GetConnectionString("SqlExpress")
+           ?? "Server=localhost;Database=ChurchDB;Trusted_Connection=True;TrustServerCertificate=True;";
+
+// Register EF Core DbContext with retry logic
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(conn, sql =>
+        sql.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(10),
+            errorNumbersToAdd: null
+        )
+    )
+);
 
 var app = builder.Build();
 
+// Pipeline
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
@@ -20,6 +40,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
-app.MapBlazorHub();                 // Blazor Server
-app.MapFallbackToPage("/_Host");    // Razor Pages fallback
+
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
+
 app.Run();

@@ -2,8 +2,8 @@ namespace AIX.Admin.Web.Data.Entities;
 
 public class Member
 {
-    // PK (not identity)
-    public int MemberNo { get; set; }
+    public int MemberPkId { get; set; }          // identity PK
+    public int MemberNo { get; set; }            // business key
 
     public int? ZipCode { get; set; }
     public short? ZipExt { get; set; }
@@ -12,10 +12,13 @@ public class Member
     public string? FirstName { get; set; }
     public string? MiddleName { get; set; }
 
-    public string? Address { get; set; }
-    public string? CityState { get; set; }
+    public string? Address1 { get; set; }
+    public string? Address2 { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? ForeignAddress { get; set; }
 
-    public short? SameAdr { get; set; }   // stored as SMALLINT (0/1 typically)
+    public short? SameAdr { get; set; }
 
     public int? CongrNum { get; set; }
     public int? CongrNum2 { get; set; }
@@ -23,11 +26,9 @@ public class Member
     public DateTime? OrdinDate { get; set; }
     public DateTime? SubscrDate { get; set; }
 
-    public string? AreaCode { get; set; }     // varchar(10)
-    public string? PhoneNo { get; set; }      // varchar(20)
-    public string? EmailAdr { get; set; }     // varchar(120)
+    public string? AreaCode { get; set; }
+    public string? PhoneNo { get; set; }
+    public string? EmailAdr { get; set; }
 
-    // Optional bookkeeping
-    public DateTime CreatedUtc { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedUtc { get; set; }
+    public DateTime LastModifiedDttm { get; set; }   // maintained by DB default
 }
