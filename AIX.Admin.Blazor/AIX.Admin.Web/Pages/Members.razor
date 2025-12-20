@@ -3,7 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
 
-<div class="container-fluid mt-3">
+<div class="container-fluid mt-3" @onkeydown="HandleGlobalKeyPress" @onkeydown:preventDefault="false" tabindex="-1">
     <div class="row">
         <div class="col-12">
             <h3>Member Search</h3>
@@ -80,7 +80,11 @@
             <div class="col-12">
                 <div class="card">
                     <div class="card-body">
-                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <div class="table-responsive" 
+                                style="max-height: 500px; overflow-y: auto;"
+                                tabindex="0"
+                                @onkeydown="HandleTableKeyPress" 
+                                @ref="tableContainer">
                             <table class="table table-striped table-hover table-sm">
                                 <thead class="table-dark sticky-top">
                                     <tr>
@@ -95,19 +99,20 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach (var member in filteredMembers.Take(100))
+                                    @foreach (var (member, index) in filteredMembers.Take(100).Select((m, i) => (m, i)))
                                     {
-                                        <tr @onclick="() => SelectMember(member)"
+                                        <tr @onclick="() => SelectMemberByIndex(index)"
                                             style="cursor: pointer;"
-                                            class="@(selectedMember?.MemberPkId == member.MemberPkId ? "table-active" : "")">
-                                            <td>@member.MemberNo</td>
-                                            <td>@member.LastName</td>
-                                            <td>@member.FirstName</td>
-                                            <td>@member.City</td>
-                                            <td>@member.State</td>
-                                            <td>@member.ZipCode</td>
-                                            <td>@member.EmailAdr</td>
-                                            <td>@(member.OrdinDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            class="@GetRowClass(index)">
+                                            
+                                                <td>@member.MemberNo</td>
+                                                <td>@member.LastName</td>
+                                                <td>@member.FirstName</td>
+                                                <td>@member.City</td>
+                                                <td>@member.State</td>
+                                                <td>@member.ZipCode</td>
+                                                <td>@member.EmailAdr</td>
+                                                <td>@(member.OrdinDate?.ToString("MM/dd/yyyy") ?? "")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -161,7 +166,7 @@
                         </div>
                         <div class="row mt-3">
                             <div class="col-12">
-                                <button class="btn btn-primary me-2">Edit Member</button>
+                                <button class="btn btn-primary me-2" @onclick="EditMember">Edit Member (Alt+E)</button>
                                 <button class="btn btn-secondary" @onclick="() => selectedMember = null">Close</button>
                             </div>
                         </div>
@@ -174,7 +179,8 @@
 
 @code {
     private ElementReference lastNameInput;
-
+    private ElementReference tableContainer; // Reference to the table div
+    private int focusedRowIndex = -1;  // Which row has keyboard focus (-1 = none)
     private string searchLastName = "";
     private string searchFirstName = "";
     private string searchEmail = "";
@@ -232,6 +238,11 @@
 
         searchExecuted = true;
         selectedMember = null;
+        focusedRowIndex = 0; // Focus first row
+
+        //Focus the table so arrow keys work immediately
+        await Task.Delay(100); // Slight delay to ensure rendering is complete
+        await tableContainer.FocusAsync();
     }
 
     private void ClearSearch()
@@ -248,5 +259,108 @@
     private void SelectMember(Member member)
     {
         selectedMember = member;
+    }
+
+    private async Task HandleTableKeyPress(KeyboardEventArgs e)
+    {
+
+        // Get the currently displayed results (limited to 100)
+        var displayedResults = filteredMembers.Take(100).ToList();
+
+        if (!displayedResults.Any()) return;
+
+        switch (e.Key)
+        {
+            case "ArrowDown":
+                // Move focus down (max at last row)
+                focusedRowIndex = Math.Min(focusedRowIndex + 1, displayedResults.Count - 1);
+                break;
+
+            case "ArrowUp":
+                // Move focus up (min at first row)
+                focusedRowIndex = Math.Min(focusedRowIndex - 1, 0);
+                break;
+
+            case "Enter":
+                if (focusedRowIndex >= 0 && focusedRowIndex < displayedResults.Count)
+                {
+                    SelectMemberByIndex(focusedRowIndex);
+                }
+                break;
+
+            case "Escape":
+                // Clear selection and reset focus
+                selectedMember = null;
+                focusedRowIndex = -1;
+                break;
+        }
+
+        //Prevent default browser behavior (like scrolling)
+        await Task.CompletedTask;
+
+    }
+
+    //Select a member by their index in the displayed results
+    private void SelectMemberByIndex(int index)
+    {
+        var displayedResults = filteredMembers.Take(100).ToList();
+        if (index >= 0 && index < displayedResults.Count)
+        {
+            SelectMember(displayedResults[index]);
+            focusedRowIndex = index;
+        }
+    }
+
+    //Determine CSS class for a row (handles both selection and focus)
+    private string GetRowClass(int index)
+    {
+        var classes = new List<string>();
+
+        // If this row is selected, highlight it
+        if (selectedMember != null && filteredMembers.Take(100).ToList()[index].MemberNo == selectedMember.MemberNo)
+        {
+            classes.Add("table-active"); 
+        }
+        // If this row has keyboard focus, add a border
+        if (index == focusedRowIndex)
+        {
+            classes.Add("table-primary"); 
+        }
+        return string.Join(" ", classes);
+    }
+
+    private void HandleGlobalKeyPress(KeyboardEventArgs e)
+    {
+        //Alt+E = Edit selected member
+        if (e.AltKey && e.Key.ToLower() == "e" && selectedMember != null)
+        {
+            // Implement edit logic here
+            EditMember();
+        }
+        // Alt+N = New member for future
+        if (e.AltKey && e.Key == "n")
+        {
+            //TODO: Navigate to new member page
+        }
+        else
+
+        // Escape = Close detail panel
+        if (e.Key == "Escape")
+        {
+            selectedMember = null;
+            focusedRowIndex = -1;
+        }
+    }
+
+    private void EditMember()
+    {
+        if (selectedMember == null) return;)
+
+        // For now, just show an alert
+        //Later, we'll navigate to an edit page
+        //NavigationManager.NavigateTo($"/members/edit/{selectedMember.MemberNo}");
+
+        // TODO:  Implement edit functionality
+        Console.WriteLine($"Editing member {selectedMember.FirstName} {selectedMember.LastName}"); 
     }
 }
