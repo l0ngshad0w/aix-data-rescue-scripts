@@ -1,58 +1,41 @@
-# AIX Data Rescue — Travel VM / Dev Sync Scripts
+# AIX Data Rescue Scripts
 
-This repo holds **portable scripts and docs** to keep your SQL Express + Blazor developer environment in sync between your **desk** and **travel** laptops.  It is a sub‑project of **AIX Data Rescue** focused on reliable, repeatable **travel workflows**.
+Legacy church database migration from IBM AIX Informix to SQL Server + Blazor UI.
 
-## Why this exists
-- Keep code and scripts synced without moving giant VM images.
-- Back up "good scripts" in a private, versioned place.
-- Make it easy to restore DB and publish artifacts while traveling.
-- Avoid committing secrets and oversized binaries.
-
-## Folder structure
-```text
-/
-├─ scripts/
-│  ├─ powershell/      # Windows automation, packaging, IIS helpers
-│  ├─ sql/             # T‑SQL DDL/DML, migrations, seed data
-│  └─ bash/            # Linux/WSL helpers (optional)
-├─ config/
-│  └─ .env.example     # Sample env vars (copy to .env locally, never commit .env)
-├─ tools/              # Small utilities used by scripts
-├─ docs/               # Runbooks, checklists, SOPs, screenshots
-├─ logs/               # Local run logs (ignored in Git)
-└─ temp/               # Scratch/output (ignored in Git)
+## Project Structure
+```
+├── AIX.Admin.Blazor/      # Blazor web application
+├── scripts/               # Migration and deployment scripts
+│   ├── bash/             # Linux/AIX extraction scripts
+│   ├── powershell/       # Windows automation
+│   ├── sql/              # DDL and data transforms
+│   └── deploy/           # Deployment automation
+├── docs/                 # Project documentation
+└── config/               # Configuration files
 ```
 
-## Quick start
-1. Clone this repo using **GitHub Desktop** (recommended) or `git clone`.
-2. Copy `config/.env.example` to `.env`, update values for your machine.  **Do not commit `.env`.**
-3. Run the scripts you need from `scripts/powershell` (Windows) or `scripts/bash` (WSL/Linux).
-4. Commit changes to scripts and docs.  Push to back up and sync to other machines.
+## Quick Start (Development)
 
-## Conventions
-- **Commit messages:** use prefixes like `feat:`, `fix:`, `docs:`, `chore:`.
-- **Secrets:** never commit keys, passwords, connection strings.  Use `.env` + a password manager.
-- **Build artifacts:** do not commit compiled `publish/` outputs.  Rebuild them when needed.
-- **SQL style:** tabs for indentation; keep DDL and DML separated by file.
+1. **Database setup:**
+```bash
+   # Run SQL scripts to create schema
+   sqlcmd -S localhost -i scripts/sql/create-schema.sql
+```
 
-## Travel workflow (high level)
-- **Before travel (desk):**
-  - Export today’s DB full backup and app publish locally.
-  - Sync scripts to this repo (push).
-- **While traveling:**
-  - Pull latest from repo.
-  - Restore DB and deploy publish using scripts.
-  - Evolve scripts or schema here; commit and push.
-- **On return:**
-  - Pull changes on the desk machine and integrate.
+2. **Run Blazor app:**
+```bash
+   cd AIX.Admin.Blazor/AIX.Admin.Web
+   dotnet run
+```
 
-> Keep this repo **lightweight**: scripts, SQL, docs.  No large VM images or sensitive data.
+3. **Access locally:**
+   Navigate to `https://localhost:5001`
 
-## Getting help
-- If new to Git, use **GitHub Desktop** for a simple point‑and‑click flow.
-- Keep **2FA** enabled on GitHub and prefer **SSH** remotes for pushes.
+## Documentation
+- [Project Status](docs/project-status.md) - Current state and next steps
+- [Tech Stack](docs/tech-stack.md) - Technology decisions
+- See `docs/` for workflow documentation and design decisions
 
----
-
-### Maintainer
-Josh Hensley
+## Deployment
+- Target: SQL Server box in Modesto, CA (VPN accessible)
+- See `scripts/deploy/` for deployment automation
