@@ -1,15 +1,178 @@
+/* Minimal styles - just basics */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
 
-body { font-family: system-ui, sans-serif; margin: 0; }
-.page { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
-.sidebar { background: #1f2937; color: #fff; padding: 1rem; }
-.sidebar a { color: #fff; text-decoration: none; }
-main { background: #f9fafb; }
-.top-row { background: #fff; border-bottom: 1px solid #e5e7eb; height: 56px; display:flex; align-items:center; }
-.content { padding: 1rem; }
-table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-th, td { border-bottom: 1px solid #e5e7eb; padding: .5rem; text-align: left; }
-input, button { padding: .5rem; margin-right: .5rem; }
-.form-grid { display: grid; grid-template-columns: 160px 1fr; gap: .5rem .75rem; margin-top: 1rem; }
-.buttons { margin-top: 1rem; }
-nav ul { list-style: none; padding-left: 0; display: grid; gap: .5rem; }
-nav li { }
+/* Remove focus outline from table container */
+.table-responsive:focus {
+    outline: none;
+}
+
+
+
+
+/* ============================================
+   AIX Church Admin - Custom Styles
+   ============================================ */
+
+/* Base body styles */
+/*body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}*/
+
+/* Navigation styles */
+/*.navbar {
+    background-color: #1e3a8a;
+}
+
+.navbar-brand {
+    color: white !important;
+}*/
+
+/* Card styles for search forms */
+/*.card {
+    border: 1px solid #dee2e6;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    font-weight: 600;
+}*/
+
+/* Button spacing */
+/*.btn {
+    margin-right: 0.5rem;
+}
+
+    .btn:last-child {
+        margin-right: 0;
+    }*/
+
+/* Form field spacing */
+/*.form-label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}*/
+
+/* ============================================
+   Member Table Styles - KEYBOARD NAVIGATION
+   ============================================ */
+
+/* Base table styles */
+/*.member-table {
+    margin-top: 1rem;
+}
+
+    .member-table thead {
+        background-color: #212529 !important;
+     }
+
+        .member-table thead tr {
+            background-color: #212529 !important;
+        }
+
+        .member-table thead th {
+            background-color: #212529 !important;
+            color: white !important;
+            font-weight: 600 !important;
+            padding: 0.75rem !important;
+            border-bottom: 2px solid #495057 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 10 !important;
+        }*/
+
+    /* All table rows - smooth transitions */
+    /*.member-table tbody tr {
+        transition: all 0.15s ease;
+        cursor: pointer;
+    }*/
+
+        /* Keyboard-focused row (arrow keys) - MUCH MORE VISIBLE */
+        /*.member-table tbody tr.row-focused {
+            background-color: #ffc107 !important;*/ /* Bright yellow */
+            /*border-left: 6px solid #ff6b00 !important;*/ /* Orange border */
+            /*font-weight: 500;
+        }*/
+
+        /* Selected row (clicked or Enter pressed) - DARK BLUE */
+        /*.member-table tbody tr.row-selected {
+            background-color: #0d6efd !important;
+            color: white !important;
+        }*/
+
+            /* Make sure selected row text is white */
+            /*.member-table tbody tr.row-selected td {
+                color: white !important;
+            }*/
+
+            /* When a row is BOTH focused AND selected - PURPLE */
+            /*.member-table tbody tr.row-selected.row-focused {
+                background-color: #6610f2 !important;*/ /* Purple */
+                /*color: white !important;
+                border-left: 6px solid #ffc107 !important;*/ /* Yellow border */
+            /*}
+
+                .member-table tbody tr.row-selected.row-focused td {
+                    color: white !important;
+                }*/
+
+        /* Hover effect (mouse over) - LIGHT BLUE */
+        /*.member-table tbody tr:hover {
+            background-color: #cfe2ff !important;
+        }*/
+
+/* Table container focus outline */
+/*.table-responsive:focus {
+    outline: 2px solid #0d6efd;
+    outline-offset: 2px;
+}*/
+
+/* ============================================
+   Member Detail Panel
+   ============================================ */
+
+/*.card.border-primary {
+    border-width: 2px !important;
+}
+
+.card-header.bg-primary {
+    background-color: #0d6efd !important;
+}*/
+
+/* ============================================
+   Alert Styles
+   ============================================ */
+
+/*.alert {
+    margin-top: 1rem;
+}*/
+
+/* ============================================
+   Utility Classes
+   ============================================ */
+
+/*.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+.text-muted {
+    color: #6c757d !important;
+}*/
+
+/* Debug info styling */
+/*.debug-info {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+}*/

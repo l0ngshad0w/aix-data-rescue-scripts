@@ -2,11 +2,13 @@
 @using AIX.Admin.Web.Data.Entities
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
+<button class="btn btn-primary">TEST - If this is blue, Bootstrap works</button>
 
 <div class="container-fluid mt-3" @onkeydown="HandleGlobalKeyPress" @onkeydown:preventDefault="false" tabindex="-1">
     <div class="row">
         <div class="col-12">
             <h3>Member Search</h3>
+            <p class="text-muted">Debug: focusedRowIndex = @focusedRowIndex, searchExecuted = @searchExecuted, resultCount = @filteredMembers.Count</p>
         </div>
     </div>
 
@@ -79,40 +81,37 @@
         <div class="row mt-3">
             <div class="col-12">
                 <div class="card">
-                    <div class="card-body">
-                        <div class="table-responsive" 
-                                style="max-height: 500px; overflow-y: auto;"
-                                tabindex="0"
-                                @onkeydown="HandleTableKeyPress" 
-                                @ref="tableContainer">
-                            <table class="table table-striped table-hover table-sm">
-                                <thead class="table-dark sticky-top">
+                    <div class="card-body p-0">
+                        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6;"
+                             tabindex="0"
+                             @onkeydown="HandleTableKeyPress"
+                             @ref="tableContainer">
+                            <table class="table table-sm table-hover mb-0" style="margin: 0;">
+                                <thead style="position: sticky; top: 0; z-index: 10; background-color: #343a40;">
                                     <tr>
-                                        <th>Member #</th>
-                                        <th>Last Name</th>
-                                        <th>First Name</th>
-                                        <th>City</th>
-                                        <th>State</th>
-                                        <th>Zip</th>
-                                        <th>Email</th>
-                                        <th>Ordination Date</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Member #</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Last Name</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">First Name</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">City</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">State</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Zip</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Email</th>
+                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Ordination Date</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var (member, index) in filteredMembers.Take(100).Select((m, i) => (m, i)))
                                     {
                                         <tr @onclick="() => SelectMemberByIndex(index)"
-                                            style="cursor: pointer;"
-                                            class="@GetRowClass(index)">
-                                            
-                                                <td>@member.MemberNo</td>
-                                                <td>@member.LastName</td>
-                                                <td>@member.FirstName</td>
-                                                <td>@member.City</td>
-                                                <td>@member.State</td>
-                                                <td>@member.ZipCode</td>
-                                                <td>@member.EmailAdr</td>
-                                                <td>@(member.OrdinDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                            style="@GetRowStyle(index)">
+                                            <td style="padding: 8px;">@member.MemberNo</td>
+                                            <td style="padding: 8px;">@member.LastName</td>
+                                            <td style="padding: 8px;">@member.FirstName</td>
+                                            <td style="padding: 8px;">@member.City</td>
+                                            <td style="padding: 8px;">@member.State</td>
+                                            <td style="padding: 8px;">@member.ZipCode</td>
+                                            <td style="padding: 8px;">@member.EmailAdr</td>
+                                            <td style="padding: 8px;">@(member.OrdinDate?.ToString("MM/dd/yyyy") ?? "")</td>
                                         </tr>
                                     }
                                 </tbody>
@@ -120,7 +119,7 @@
                         </div>
                         @if (filteredMembers.Count > 100)
                         {
-                            <div class="alert alert-info mt-2">
+                            <div class="alert alert-info m-2">
                                 Showing first 100 of @filteredMembers.Count results. Refine your search for more specific results.
                             </div>
                         }
@@ -129,7 +128,7 @@
             </div>
         </div>
     }
-    else if (searchExecuted && !filteredMembers.Any())
+else if (searchExecuted && !filteredMembers.Any())
     {
         <div class="row mt-3">
             <div class="col-12">
@@ -227,7 +226,7 @@
 
         if (!string.IsNullOrWhiteSpace(searchZipCode))
         {
-            query = query.Where(m => m.ZipCode != null && m.ZipCode.ToString().Contains(searchZipCode));
+            query = query.Where(m => m.ZipCode !=null && m.ZipCode.ToString()!.Contains(searchZipCode));
         }
 
         filteredMembers = await query
@@ -241,7 +240,8 @@
         focusedRowIndex = 0; // Focus first row
 
         //Focus the table so arrow keys work immediately
-        await Task.Delay(100); // Slight delay to ensure rendering is complete
+        StateHasChanged(); 
+        await Task.Delay(50); // Slight delay to ensure rendering is complete
         await tableContainer.FocusAsync();
     }
 
@@ -272,13 +272,40 @@
         switch (e.Key)
         {
             case "ArrowDown":
-                // Move focus down (max at last row)
-                focusedRowIndex = Math.Min(focusedRowIndex + 1, displayedResults.Count - 1);
+                // If no row is focused, focus the first row
+                if (focusedRowIndex < 0)
+                {
+                    focusedRowIndex = 0;
+                }
+                // Otherwise move down, wrapping to top if at bottom
+                else if (focusedRowIndex < displayedResults.Count - 1)
+                {
+                    focusedRowIndex++;
+                }
+                else
+                {
+                    focusedRowIndex = 0;
+                }
+                // auto select as you arrow
+                SelectMemberByIndex(focusedRowIndex);
                 break;
 
             case "ArrowUp":
-                // Move focus up (min at first row)
-                focusedRowIndex = Math.Min(focusedRowIndex - 1, 0);
+                // If no row focused yet, start at last row
+                if (focusedRowIndex < 0)
+                {
+                    focusedRowIndex = displayedResults.Count - 1;
+                }
+                // Otherwise move up, wrapping to bottom if at top
+                else if (focusedRowIndex > 0)
+                {
+                    focusedRowIndex--;
+                }
+                else
+                {
+                    focusedRowIndex = displayedResults.Count - 1; // Wrap to bottom
+                }
+                SelectMemberByIndex(focusedRowIndex);
                 break;
 
             case "Enter":
@@ -316,17 +343,67 @@
     {
         var classes = new List<string>();
 
-        // If this row is selected, highlight it
-        if (selectedMember != null && filteredMembers.Take(100).ToList()[index].MemberNo == selectedMember.MemberNo)
+        var displayedResults = filteredMembers.Take(100).ToList();
+
+        // Check if this row's member is selected
+        if (index < displayedResults.Count &&
+            selectedMember != null &&
+            displayedResults[index].MemberPkId == selectedMember.MemberPkId)
         {
-            classes.Add("table-active"); 
+            classes.Add("row-selected");
         }
-        // If this row has keyboard focus, add a border
+
+        // Check if this row has keyboard focus
         if (index == focusedRowIndex)
         {
-            classes.Add("table-primary"); 
+            classes.Add("row-focused");
         }
+
         return string.Join(" ", classes);
+    }
+
+    private string GetRowStyle(int index)
+    {
+        var displayedResults = filteredMembers.Take(100).ToList();
+        var styles = new List<string>();
+
+        // Always add cursor pointer
+        styles.Add("cursor: pointer");
+        styles.Add("padding: 8px");
+
+        // Check if this row is selected
+        bool isSelected = selectedMember != null &&
+                          index < displayedResults.Count &&
+                          displayedResults[index].MemberPkId == selectedMember.MemberPkId;
+
+        // Check if this row has keyboard focus
+        bool isFocused = index == focusedRowIndex;
+
+        // Both selected AND focused - PURPLE
+        if (isSelected && isFocused)
+        {
+            styles.Add("background-color: #6f42c1");
+            styles.Add("color: white");
+            styles.Add("border-left: 6px solid #ffc107");
+            styles.Add("font-weight: 500");
+        }
+        // Just selected - BLUE
+        else if (isSelected)
+        {
+            styles.Add("background-color: #0d6efd");
+            styles.Add("color: white");
+            styles.Add("border-left: 4px solid #0a58ca");
+        }
+        // Just focused - PINK (temp test)
+        else if (isFocused)
+        {
+            styles.Add("background-color: #ff1493");  // Deep pink
+            styles.Add("color: white"); // Ensure text is readable
+            styles.Add("border-left: 6px solid #ffd700"); // Gold border
+            styles.Add("font-weight: 500");
+        }
+
+        return string.Join("; ", styles);
     }
 
     private void HandleGlobalKeyPress(KeyboardEventArgs e)
@@ -354,7 +431,7 @@
 
     private void EditMember()
     {
-        if (selectedMember == null) return;)
+        if (selectedMember == null) return;
 
         // For now, just show an alert
         //Later, we'll navigate to an edit page
