@@ -1,145 +1,252 @@
-﻿@* // =================================================================
-// SECTION 1: DIRECTIVES (Instructions for Blazor)
-// =================================================================
-
-// This MUST be the first line. It tells Blazor this is a page with the URL "/members".
- *@
- @page "/members"
-
-@*  // This tells the page where to find your auto-generated data classes (like the Member class).
-  // *** Replace "YourProjectName" with the actual name of your project. *** *@
-@using AIX.Admin.Web.Data
-
-@*// This asks Blazor to "inject" or provide the database connection service.
-// *** Replace "YourDbContext" with the actual name of your DbContext file. ***  *@
+﻿@page "/members"
+@using AIX.Admin.Web.Data.Entities
+@using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
 
-@*
-// =================================================================
-// SECTION 2: HTML & MUD BLazor COMPONENTS (What the user sees)
-// =================================================================
-*@
-<MudText Typo="Typo.h4">Church Members</MudText>
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-12">
+            <h3>Member Search</h3>
+        </div>
+    </div>
 
+    @* Search Form *@
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <form @onsubmit="SearchMembers" @onsubmit:preventDefault>
+                        <div class="row g-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="searchLastName"
+                                       @ref="lastNameInput"
+                                       tabindex="1"
+                                       placeholder="Enter last name" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="searchFirstName"
+                                       tabindex="2"
+                                       placeholder="Enter first name" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Email</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="searchEmail"
+                                       tabindex="3"
+                                       placeholder="Enter email" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Zip Code</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="searchZipCode"
+                                       tabindex="4"
+                                       placeholder="Enter zip" />
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-primary" tabindex="5">
+                                    Search (Enter)
+                                </button>
+                                <button type="button" class="btn btn-secondary ms-2" @onclick="ClearSearch" tabindex="6">
+                                    Clear (Esc)
+                                </button>
+                                <span class="ms-3 text-muted">
+                                    @if (searchExecuted)
+                                    {
+                                        <text>Found @filteredMembers.Count members</text>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    @* Results Table *@
+    @if (searchExecuted && filteredMembers.Any())
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                            <table class="table table-striped table-hover table-sm">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th>Member #</th>
+                                        <th>Last Name</th>
+                                        <th>First Name</th>
+                                        <th>City</th>
+                                        <th>State</th>
+                                        <th>Zip</th>
+                                        <th>Email</th>
+                                        <th>Ordination Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var member in filteredMembers.Take(100))
+                                    {
+                                        <tr @onclick="() => SelectMember(member)"
+                                            style="cursor: pointer;"
+                                            class="@(selectedMember?.MemberPkId == member.MemberPkId ? "table-active" : "")">
+                                            <td>@member.MemberNo</td>
+                                            <td>@member.LastName</td>
+                                            <td>@member.FirstName</td>
+                                            <td>@member.City</td>
+                                            <td>@member.State</td>
+                                            <td>@member.ZipCode</td>
+                                            <td>@member.EmailAdr</td>
+                                            <td>@(member.OrdinDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        @if (filteredMembers.Count > 100)
+                        {
+                            <div class="alert alert-info mt-2">
+                                Showing first 100 of @filteredMembers.Count results. Refine your search for more specific results.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (searchExecuted && !filteredMembers.Any())
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="alert alert-warning">
+                    No members found matching your search criteria.
+                </div>
+            </div>
+        </div>
+    }
 
-@* // This logic checks if the data has been loaded from the database yet. 
-@if (memberList == null)
-{
-    // If 'memberList' is null, it means we're still loading, so show a spinner.
-    <MudProgressCircular Color="Color.Default" Indeterminate="true" />
-}
-else
-{
-*@    <MudPaper Class="pa-4 mb-4">
-        <MudGrid Spacing="2">
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField @bind-Value="searchLastName" Label="Last Name" Variant="Variant.Outlined" Clearable="true" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField @bind-Value="searchFirstName" Label="First Name" Variant="Variant.Outlined" Clearable="true" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField @bind-Value="searchEmail" Label="Email" Variant="Variant.Outlined" Clearable="true" />
-            </MudItem>
-            <MudItem xs="12" sm="6" md="3">
-                <MudTextField @bind-Value="searchZipCode" Label="Zip Code" Variant="Variant.Outlined" Clearable="true" />
-            </MudItem>
-            <MudItem xs="12" Class="d-flex justify-end">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="FilterMembers" Class="mr-2">Search</MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="ClearFilter">Clear</MudButton>
-            </MudItem>
-        </MudGrid>
-    </MudPaper>
-    
-    // Once 'memberList' has data, show the MudTable grid.
-    <MudTable Items="@filteredMemberList" Hover="true" Striped="true" Dense="true">
-        <HeaderContent>
-            <MudTh>First Name</MudTh>
-            <MudTh>Last Name</MudTh>
-        </HeaderContent>
-        <RowTemplate>
-            <MudTd DataLabel="First Name">@context.FirstName</MudTd>
-            <MudTd DataLabel="Last Name">@context.LastName</MudTd>
-        </RowTemplate>
-        <PagerContent>
-            <MudTablePager />
-        </PagerContent>
-    </MudTable>
-
-
-@*
-// =================================================================
-// SECTION 3: C# LOGIC (The page's "brain")
-// =================================================================
-*@
+    @* Selected Member Details *@
+    @if (selectedMember != null)
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Selected Member Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Member #:</strong> @selectedMember.MemberNo</p>
+                                <p><strong>Name:</strong> @selectedMember.FirstName @selectedMember.MiddleName @selectedMember.LastName</p>
+                                <p><strong>Address:</strong> @selectedMember.Address1 @selectedMember.Address2</p>
+                                <p><strong>City/State/Zip:</strong> @selectedMember.City, @selectedMember.State @selectedMember.ZipCode</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Email:</strong> @selectedMember.EmailAdr</p>
+                                <p><strong>Phone:</strong> (@selectedMember.AreaCode) @selectedMember.PhoneNo</p>
+                                <p><strong>Ordination Date:</strong> @(selectedMember.OrdinDate?.ToString("MM/dd/yyyy") ?? "N/A")</p>
+                                <p><strong>Last Modified:</strong> @selectedMember.LastModifiedDttm.ToString("MM/dd/yyyy")</p>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <button class="btn btn-primary me-2">Edit Member</button>
+                                <button class="btn btn-secondary" @onclick="() => selectedMember = null">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
-    // This list holds ALL members from the database and never changes.
-    private List<Member> allMembers;
+    private ElementReference lastNameInput;
 
-    // This list holds the members to be displayed in the table (after filtering).
-    private List<Member> filteredMemberList = new List<Member>();
-
-    // Variables to hold the text from our search boxes.
     private string searchLastName = "";
     private string searchFirstName = "";
     private string searchEmail = "";
     private string searchZipCode = "";
 
-    public Members(List<Member> allMembers)
+    private List<Member> filteredMembers = new();
+    private Member? selectedMember = null;
+    private bool searchExecuted = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        this.allMembers = allMembers;
+        if (firstRender)
+        {
+            await lastNameInput.FocusAsync();
+        }
     }
 
-    protected override async Task OnInitializedAsync()
+    private async Task SearchMembers()
     {
-        // 1. Load all members from the database into our master list.
-        allMembers = await DbContext.Members.ToListAsync();
+        if (string.IsNullOrWhiteSpace(searchLastName) &&
+            string.IsNullOrWhiteSpace(searchFirstName) &&
+            string.IsNullOrWhiteSpace(searchEmail) &&
+            string.IsNullOrWhiteSpace(searchZipCode))
+        {
+            return;
+        }
 
-        // 2. Initially, the filtered list is the same as the master list.
-        filteredMemberList = allMembers;
-    }
+        var query = DbContext.Members.AsQueryable();
 
-    private void FilterMembers()
-    {
-        // Start with the full list of members.
-        var query = allMembers.AsQueryable();
-
-        // Apply filters one by one, only if the search box has text.
         if (!string.IsNullOrWhiteSpace(searchLastName))
         {
-            query = query.Where(m => m.LastName != null && m.LastName.Contains(searchLastName, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(m => m.LastName != null && m.LastName.Contains(searchLastName));
         }
 
         if (!string.IsNullOrWhiteSpace(searchFirstName))
         {
-            query = query.Where(m => m.FirstName != null && m.FirstName.Contains(searchFirstName, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(m => m.FirstName != null && m.FirstName.Contains(searchFirstName));
         }
 
         if (!string.IsNullOrWhiteSpace(searchEmail))
         {
-            query = query.Where(m => m.EmailAdr != null && m.EmailAdr.Contains(searchEmail, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(m => m.EmailAdr != null && m.EmailAdr.Contains(searchEmail));
         }
 
         if (!string.IsNullOrWhiteSpace(searchZipCode))
         {
-            query = query.Where(m => m.ZipCode != null && m.ZipCode.ToString().Contains(searchZipCode, StringComparison.OrdinalIgnoreCase));
+            query = query.Where(m => m.ZipCode != null && m.ZipCode.ToString().Contains(searchZipCode));
         }
 
-        // Update the list that the table is bound to. The UI will refresh automatically.
-        filteredMemberList = query.ToList();
+        filteredMembers = await query
+            .OrderBy(m => m.LastName)
+            .ThenBy(m => m.FirstName)
+            .Take(500)
+            .ToListAsync();
+
+        searchExecuted = true;
+        selectedMember = null;
     }
 
-    private void ClearFilter()
+    private void ClearSearch()
     {
-        // Clear the search boxes.
         searchLastName = "";
         searchFirstName = "";
         searchEmail = "";
         searchZipCode = "";
+        filteredMembers.Clear();
+        selectedMember = null;
+        searchExecuted = false;
+    }
 
-        // Reset the filtered list back to the full master list.
-        filteredMemberList = allMembers;
+    private void SelectMember(Member member)
+    {
+        selectedMember = member;
     }
 }
