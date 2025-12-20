@@ -1,80 +1,44 @@
-# OS & editor
-.DS_Store
-Thumbs.db
-*.code-workspace
-.vscode/
-.idea/
-
-# Logs & temp
-*.log
-logs/
-temp/
-tmp/
-
-# Environment & secrets
-.env
-.env.*
-secrets/
-*.key
-*.pem
-*.pfx
-**/certs/**
-
-# Build / publish outputs
-publish/
-dist/
-build/
-out/
-*.zip
-*.7z
-
-# Database dumps & large binaries (track in artifact storage, not Git)
-*.bak
-*.mdf
-*.ldf
-*.bacpac
-*.dacpac
-*.iso
-*.vdi
-*.vmdk
-
-# Python / Node (if used)
-__pycache__/
-node_modules/
-
-# Tool-specific
-# Generated reports or exports can go to ./temp and stay ignored
-**/export/**
-
-# Keep placeholder files (allow .gitkeep to pass)
-!**/.gitkeep
-
 # Build outputs
-**/bin/
-**/obj/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
 
-# IIS publish outputs (don’t commit server drops)
-C:/ChurchApp/
-**/publish/
-
-# IDE cruft
-.vs/
-.vscode/
+# User-specific files
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
 
-# Logs / temp
+# Visual Studio cache/options
+.vs/
+
+# Entity Framework
+*.db
+*.db-shm
+*.db-wal
+
+# SQL Server files (local dev databases)
+*.mdf
+*.ldf
+
+# Logs
+logs/
 *.log
+
+# Temp files
+temp/
 *.tmp
-*.temp
 
-# Secrets / local config (keep prod config in server only)
-**/appsettings.Development.json
-# If you create appsettings.Local.json, ignore it:
-**/appsettings.Local.json
+# Connection strings (don't commit secrets)
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
 
-# Node/bundler (if added later)
-node_modules/
-dist/
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
