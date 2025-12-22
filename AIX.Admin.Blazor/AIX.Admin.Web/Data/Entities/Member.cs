@@ -23,8 +23,8 @@ public class Member
     public int? CongrNum { get; set; }
     public int? CongrNum2 { get; set; }
 
-    public DateTime? OrdinDate { get; set; }
-    public DateTime? SubscrDate { get; set; }
+    public DateOnly? OrdinDate { get; set; }
+    public DateOnly? SubscrDate { get; set; }
 
     public string? AreaCode { get; set; }
     public string? PhoneNo { get; set; }

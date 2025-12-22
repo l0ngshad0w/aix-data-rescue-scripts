@@ -8,46 +8,80 @@ public class AppDbContext : DbContext
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<CourseTitle> CourseTitles { get; set; }
+    public DbSet<MemberCourse> MemberCourses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Member>(e =>
+        base.OnModelCreating(modelBuilder);
+
+        // Configure Member table
+        modelBuilder.Entity<Member>(entity =>
         {
-            e.ToTable("membr"); // dbo.membr
+            entity.ToTable("membr");
+            entity.HasKey(e => e.MemberPkId);
+            entity.HasIndex(e => e.MemberNo).IsUnique();
 
-            e.HasKey(m => m.MemberPkId).HasName("PK_membr_pk_id");
-            e.Property(m => m.MemberPkId).HasColumnName("member_pk_id"); // identity
+            // Column mappings
+            entity.Property(e => e.MemberPkId).HasColumnName("member_pk_id");
+            entity.Property(e => e.MemberNo).HasColumnName("member_no");
+            entity.Property(e => e.ZipCode).HasColumnName("zip_code");
+            entity.Property(e => e.ZipExt).HasColumnName("zip_ext");
+            entity.Property(e => e.LastName).HasColumnName("last_name");
+            entity.Property(e => e.FirstName).HasColumnName("first_name");
+            entity.Property(e => e.MiddleName).HasColumnName("middle_name");
+            entity.Property(e => e.Address1).HasColumnName("address1");
+            entity.Property(e => e.Address2).HasColumnName("address2");
+            entity.Property(e => e.City).HasColumnName("city");
+            entity.Property(e => e.State).HasColumnName("state");
+            entity.Property(e => e.ForeignAddress).HasColumnName("foreign_address");
+            entity.Property(e => e.SameAdr).HasColumnName("same_adr");
+            entity.Property(e => e.CongrNum).HasColumnName("congr_num");
+            entity.Property(e => e.CongrNum2).HasColumnName("congr_num2");
+            entity.Property(e => e.OrdinDate).HasColumnName("ordin_date");
+            entity.Property(e => e.SubscrDate).HasColumnName("subscr_date");
+            entity.Property(e => e.AreaCode).HasColumnName("area_code");
+            entity.Property(e => e.PhoneNo).HasColumnName("phone_no");
+            entity.Property(e => e.EmailAdr).HasColumnName("email_adr");
+            entity.Property(e => e.LastModifiedDttm)
+                  .HasColumnName("last_modified_dttm")
+                  .HasDefaultValueSql("GETDATE()");
+        });
 
-            e.Property(m => m.MemberNo).HasColumnName("member_no").IsRequired();
-            // Optional (recommended): unique index on member_no
-            e.HasIndex(m => m.MemberNo).IsUnique();
+        //Configure CourseTitle Table
+        modelBuilder.Entity<CourseTitle>(entity =>
+        {
+            entity.ToTable("coursetitle");
+            entity.HasKey(e => new { e.CtType, e.CtNumber });
 
-            e.Property(m => m.ZipCode).HasColumnName("zip_code");
-            e.Property(m => m.ZipExt).HasColumnName("zip_ext");
+            entity.Property(e => e.CtType).HasColumnName("ct_type").HasMaxLength(1).IsFixedLength();
+            entity.Property(e => e.CtNumber).HasColumnName("ct_number");
+            entity.Property(e => e.Desc1).HasColumnName("desc1").HasMaxLength(100);
+            entity.Property(e => e.Desc2).HasColumnName("desc2").HasMaxLength(50);
+        });
 
-            e.Property(m => m.LastName).HasColumnName("last_name").HasMaxLength(40);
-            e.Property(m => m.FirstName).HasColumnName("first_name").HasMaxLength(40);
-            e.Property(m => m.MiddleName).HasColumnName("middle_name").HasMaxLength(40);
+        // Configure MemberCourse join table
+        modelBuilder.Entity<MemberCourse>(entity =>
+        {
+            entity.ToTable("ct_membr_xrf");
+            entity.HasKey(e => new { e.MemberNo, e.CtType, e.CtNumber });
 
-            e.Property(m => m.Address1).HasColumnName("address1").HasMaxLength(100);
-            e.Property(m => m.Address2).HasColumnName("address2").HasMaxLength(80);
-            e.Property(m => m.City).HasColumnName("city").HasMaxLength(60);
-            e.Property(m => m.State).HasColumnName("state").HasMaxLength(10);
-            e.Property(m => m.ForeignAddress).HasColumnName("foreign_address").HasMaxLength(120);
+            entity.Property(e => e.MemberNo).HasColumnName("member_no");
+            entity.Property(e => e.CtType).HasColumnName("ct_type").HasMaxLength(1).IsFixedLength();
+            entity.Property(e => e.CtNumber).HasColumnName("ct_number");
+            entity.Property(e => e.AssignedDate).HasColumnName("assigned_date");
 
-            e.Property(m => m.SameAdr).HasColumnName("same_adr");
+            // Foreign key relationships
+            entity.HasOne(e => e.Member)
+                  .WithMany()
+                  .HasForeignKey(e => e.MemberNo)
+                  .HasPrincipalKey(m => m.MemberNo)
+                  .OnDelete(DeleteBehavior.Restrict);
 
-            e.Property(m => m.CongrNum).HasColumnName("congr_num");
-            e.Property(m => m.CongrNum2).HasColumnName("congr_num2");
-
-            e.Property(m => m.OrdinDate).HasColumnName("ordin_date");
-            e.Property(m => m.SubscrDate).HasColumnName("subscr_date");
-
-            e.Property(m => m.AreaCode).HasColumnName("area_code").HasMaxLength(10);
-            e.Property(m => m.PhoneNo).HasColumnName("phone_no").HasMaxLength(20);
-            e.Property(m => m.EmailAdr).HasColumnName("email_adr").HasMaxLength(120);
-
-            e.Property(m => m.LastModifiedDttm).HasColumnName("last_modified_dttm");
+            entity.HasOne(e => e.CourseTitle)
+                  .WithMany(ct => ct.MemberCourses)
+                  .HasForeignKey(e => new { e.CtType, e.CtNumber })
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

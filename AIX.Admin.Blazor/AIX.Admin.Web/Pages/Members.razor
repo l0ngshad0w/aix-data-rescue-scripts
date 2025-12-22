@@ -2,442 +2,606 @@
 @using AIX.Admin.Web.Data.Entities
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
-<button class="btn btn-primary">TEST - If this is blue, Bootstrap works</button>
 
-<div class="container-fluid mt-3" @onkeydown="HandleGlobalKeyPress" @onkeydown:preventDefault="false" tabindex="-1">
+<div class="container-fluid mt-3" @onkeydown="HandleGlobalKeyPress" tabindex="-1">
     <div class="row">
         <div class="col-12">
-            <h3>Member Search</h3>
-            <p class="text-muted">Debug: focusedRowIndex = @focusedRowIndex, searchExecuted = @searchExecuted, resultCount = @filteredMembers.Count</p>
+            <h3>Member Search & Edit</h3>
         </div>
     </div>
 
-    @* Search Form *@
+    @* Primary Data Entry Form *@
     <div class="row mt-3">
-        <div class="col-12">
+        <div class="col-md-8">
             <div class="card">
+                <div class="card-header" style="background-color: #343a40; color: white;">
+                    <strong>Member Information</strong>
+                    @if (currentMember != null)
+                    {
+                        <span class="float-end">Member #@currentMember.MemberNo</span>
+                    }
+                </div>
                 <div class="card-body">
                     <form @onsubmit="SearchMembers" @onsubmit:preventDefault>
-                        <div class="row g-2">
+                        @* Row 1: Zip + Last Name *@
+                        <div class="row mb-2">
                             <div class="col-md-3">
-                                <label class="form-label">Last Name</label>
+                                <label class="form-label fw-bold">Zip Code</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editZipCode"
+                                       @ref="zipCodeInput"
+                                       tabindex="1"
+                                       maxlength="5"
+                                       placeholder="Enter zip" />
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">+Ext</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editZipExt"
+                                       tabindex="2"
+                                       maxlength="4"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold">Last Name</label>
                                 <input type="text"
                                        class="form-control"
                                        @bind="searchLastName"
-                                       @ref="lastNameInput"
-                                       tabindex="1"
+                                       tabindex="3"
+                                       maxlength="40"
                                        placeholder="Enter last name" />
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label">First Name</label>
+                        </div>
+
+                        @* Row 2: First + Middle *@
+                        <div class="row mb-2">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">First Name</label>
                                 <input type="text"
                                        class="form-control"
-                                       @bind="searchFirstName"
-                                       tabindex="2"
-                                       placeholder="Enter first name" />
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Email</label>
-                                <input type="text"
-                                       class="form-control"
-                                       @bind="searchEmail"
-                                       tabindex="3"
-                                       placeholder="Enter email" />
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Zip Code</label>
-                                <input type="text"
-                                       class="form-control"
-                                       @bind="searchZipCode"
+                                       @bind="editFirstName"
                                        tabindex="4"
-                                       placeholder="Enter zip" />
+                                       maxlength="40"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Middle</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editMiddleName"
+                                       tabindex="5"
+                                       maxlength="40"
+                                       disabled="@(!isEditing)" />
                             </div>
                         </div>
+
+                        @* Row 3: Address 1 *@
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Address 1</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editAddress1"
+                                       tabindex="6"
+                                       maxlength="100"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+
+                        @* Row 4: Address 2 *@
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Address 2</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editAddress2"
+                                       tabindex="7"
+                                       maxlength="80"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+
+                        @* Row 5: City + State *@
+                        <div class="row mb-2">
+                            <div class="col-md-8">
+                                <label class="form-label fw-bold">City</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editCity"
+                                       tabindex="8"
+                                       maxlength="60"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">State</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editState"
+                                       tabindex="9"
+                                       maxlength="10"
+                                       style="text-transform: uppercase;"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+
+                        @* Row 6: Email *@
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <label class="form-label fw-bold">Email</label>
+                                <input type="email"
+                                       class="form-control"
+                                       @bind="editEmail"
+                                       tabindex="10"
+                                       maxlength="120"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+
+                        @* Row 7: Phone *@
+                        <div class="row mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">Area Code</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editAreaCode"
+                                       tabindex="11"
+                                       maxlength="10"
+                                       placeholder="(209)"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                            <div class="col-md-9">
+                                <label class="form-label fw-bold">Phone Number</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="editPhoneNo"
+                                       tabindex="12"
+                                       maxlength="20"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+
+                        @* Row 8: Ordination Date *@
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Ordination Date</label>
+                                <input type="date"
+                                       class="form-control"
+                                       @bind-value="editOrdinDate"
+                                       tabindex="13"
+                                       disabled="@(!isEditing)" />
+                            </div>
+                            @if (showMoreFields)
+                            {
+                                <div class="col-md-4">
+                                    <label class="form-label">Subscription Date</label>
+                                    <input type="date"
+                                           class="form-control"
+                                           @bind-value="editSubscrDate"
+                                           tabindex="14"
+                                           disabled="@(!isEditing)" />
+                                </div>
+                            }
+                        </div>
+
+                        @* Additional Fields (shown when F4 pressed) *@
+                        @if (showMoreFields)
+                        {
+                            <div class="row mb-2" style="border-top: 2px solid #dee2e6; padding-top: 1rem;">
+                                <div class="col-md-6">
+                                    <label class="form-label">Congregation 1</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           @bind="editCongrNum1"
+                                           tabindex="15"
+                                           disabled="@(!isEditing)" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Congregation 2</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           @bind="editCongrNum2"
+                                           tabindex="16"
+                                           disabled="@(!isEditing)" />
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-12">
+                                    <label class="form-label">Foreign Address</label>
+                                    <input type="text"
+                                           class="form-control"
+                                           @bind="editForeignAddress"
+                                           tabindex="17"
+                                           maxlength="120"
+                                           disabled="@(!isEditing)" />
+                                </div>
+                            </div>
+                            <div class="row mb-2">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input type="checkbox"
+                                               class="form-check-input"
+                                               @bind="editSameAdr"
+                                               tabindex="18"
+                                               id="sameAdrCheck"
+                                               disabled="@(!isEditing)" />
+                                        <label class="form-check-label" for="sameAdrCheck">
+                                            Same Address (use congregation)
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        @* Buttons *@
                         <div class="row mt-3">
                             <div class="col-12">
-                                <button type="submit" class="btn btn-primary" tabindex="5">
-                                    Search (Enter)
+                                <button type="submit" class="btn btn-primary" tabindex="19">
+                                    Search (F2)
                                 </button>
-                                <button type="button" class="btn btn-secondary ms-2" @onclick="ClearSearch" tabindex="6">
-                                    Clear (Esc)
+                                <button type="button" class="btn btn-success ms-2" @onclick="NewMember" tabindex="20">
+                                    New (F3)
                                 </button>
-                                <span class="ms-3 text-muted">
-                                    @if (searchExecuted)
-                                    {
-                                        <text>Found @filteredMembers.Count members</text>
-                                    }
-                                </span>
+                                <button type="button"
+                                        class="btn btn-warning ms-2"
+                                        @onclick="SaveMember"
+                                        tabindex="21"
+                                        disabled="@(!isEditing || currentMember == null)">
+                                    Save (Alt+S)
+                                </button>
+                                <button type="button"
+                                        class="btn btn-secondary ms-2"
+                                        @onclick="ToggleMoreFields"
+                                        tabindex="22">
+                                    @(showMoreFields ? "Less" : "More...") (F4)
+                                </button>
+                                @if (!string.IsNullOrEmpty(statusMessage))
+                                {
+                                    <span class="ms-3 @statusMessageClass">@statusMessage</span>
+                                }
                             </div>
                         </div>
                     </form>
                 </div>
+                @if (currentMember != null)
+                {
+                    <div class="card-footer text-muted" style="font-size: 0.875rem;">
+                        Last Modified: @currentMember.LastModifiedDttm.ToString("MM/dd/yyyy HH:mm")
+                    </div>
+                }
             </div>
         </div>
-    </div>
 
-    @* Results Table *@
-    @if (searchExecuted && filteredMembers.Any())
-    {
-        <div class="row mt-3">
-            <div class="col-12">
+        @* Search Results Panel *@
+        <div class="col-md-4">
+            @if (searchResults.Any())
+            {
                 <div class="card">
+                    <div class="card-header" style="background-color: #6c757d; color: white;">
+                        <strong>Search Results (@searchResults.Count found)</strong>
+                    </div>
                     <div class="card-body p-0">
-                        <div style="max-height: 500px; overflow-y: auto; border: 1px solid #dee2e6;"
+                        <div style="max-height: 600px; overflow-y: auto;"
                              tabindex="0"
-                             @onkeydown="HandleTableKeyPress"
-                             @ref="tableContainer">
-                            <table class="table table-sm table-hover mb-0" style="margin: 0;">
-                                <thead style="position: sticky; top: 0; z-index: 10; background-color: #343a40;">
-                                    <tr>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Member #</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Last Name</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">First Name</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">City</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">State</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Zip</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Email</th>
-                                        <th style="color: white; padding: 12px; border-bottom: 2px solid #495057;">Ordination Date</th>
-                                    </tr>
-                                </thead>
+                             @onkeydown="HandleResultsKeyPress"
+                             @ref="resultsContainer">
+                            <table class="table table-sm table-hover mb-0" style="font-size: 0.875rem;">
                                 <tbody>
-                                    @foreach (var (member, index) in filteredMembers.Take(100).Select((m, i) => (m, i)))
+                                    @foreach (var (member, index) in searchResults.Select((m, i) => (m, i)))
                                     {
-                                        <tr @onclick="() => SelectMemberByIndex(index)"
-                                            style="@GetRowStyle(index)">
-                                            <td style="padding: 8px;">@member.MemberNo</td>
-                                            <td style="padding: 8px;">@member.LastName</td>
-                                            <td style="padding: 8px;">@member.FirstName</td>
-                                            <td style="padding: 8px;">@member.City</td>
-                                            <td style="padding: 8px;">@member.State</td>
-                                            <td style="padding: 8px;">@member.ZipCode</td>
-                                            <td style="padding: 8px;">@member.EmailAdr</td>
-                                            <td style="padding: 8px;">@(member.OrdinDate?.ToString("MM/dd/yyyy") ?? "")</td>
+                                        <tr @onclick="() => SelectMember(index)"
+                                            style="@GetResultRowStyle(index); cursor: pointer;">
+                                            <td style="padding: 6px;">
+                                                <strong>@member.MemberNo</strong><br />
+                                                @member.LastName, @member.FirstName<br />
+                                                <small class="text-muted">@member.City, @member.State @member.ZipCode</small>
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
                             </table>
                         </div>
-                        @if (filteredMembers.Count > 100)
-                        {
-                            <div class="alert alert-info m-2">
-                                Showing first 100 of @filteredMembers.Count results. Refine your search for more specific results.
-                            </div>
-                        }
                     </div>
                 </div>
-            </div>
+            }
         </div>
-    }
-else if (searchExecuted && !filteredMembers.Any())
-    {
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="alert alert-warning">
-                    No members found matching your search criteria.
-                </div>
-            </div>
-        </div>
-    }
-
-    @* Selected Member Details *@
-    @if (selectedMember != null)
-    {
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="card border-primary">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Selected Member Details</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <p><strong>Member #:</strong> @selectedMember.MemberNo</p>
-                                <p><strong>Name:</strong> @selectedMember.FirstName @selectedMember.MiddleName @selectedMember.LastName</p>
-                                <p><strong>Address:</strong> @selectedMember.Address1 @selectedMember.Address2</p>
-                                <p><strong>City/State/Zip:</strong> @selectedMember.City, @selectedMember.State @selectedMember.ZipCode</p>
-                            </div>
-                            <div class="col-md-6">
-                                <p><strong>Email:</strong> @selectedMember.EmailAdr</p>
-                                <p><strong>Phone:</strong> (@selectedMember.AreaCode) @selectedMember.PhoneNo</p>
-                                <p><strong>Ordination Date:</strong> @(selectedMember.OrdinDate?.ToString("MM/dd/yyyy") ?? "N/A")</p>
-                                <p><strong>Last Modified:</strong> @selectedMember.LastModifiedDttm.ToString("MM/dd/yyyy")</p>
-                            </div>
-                        </div>
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <button class="btn btn-primary me-2" @onclick="EditMember">Edit Member (Alt+E)</button>
-                                <button class="btn btn-secondary" @onclick="() => selectedMember = null">Close</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
+    </div>
 </div>
 
 @code {
-    private ElementReference lastNameInput;
-    private ElementReference tableContainer; // Reference to the table div
-    private int focusedRowIndex = -1;  // Which row has keyboard focus (-1 = none)
-    private string searchLastName = "";
-    private string searchFirstName = "";
-    private string searchEmail = "";
-    private string searchZipCode = "";
+        // Element references
+    private ElementReference zipCodeInput;
+    private ElementReference resultsContainer;
 
-    private List<Member> filteredMembers = new();
-    private Member? selectedMember = null;
-    private bool searchExecuted = false;
+    // Search fields
+   // private string searchZipCode = "";
+    private string searchLastName = "";
+
+    // Edit fields (bound to form)
+    private string editZipCode = ""; // <-- FIX: Add missing declaration
+    private string editZipExt = "";
+    private string editFirstName = "";
+    private string editMiddleName = "";
+    private string editAddress1 = "";
+    private string editAddress2 = "";
+    private string editCity = "";
+    private string editState = "";
+    private string editEmail = "";
+    private string editAreaCode = "";
+    private string editPhoneNo = "";
+    private DateOnly? editOrdinDate = null;
+    private DateOnly? editSubscrDate = null;
+    private string editCongrNum1 = "";
+    private string editCongrNum2 = "";
+    private string editForeignAddress = "";
+    private bool editSameAdr = false;
+
+
+    // State
+    private List<Member> searchResults = new();
+    private Member? currentMember = null;
+    private int focusedResultIndex = -1;
+    private bool isEditing = false;
+    private bool showMoreFields = false;
+    private string statusMessage = "";
+    private string statusMessageClass = "";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await lastNameInput.FocusAsync();
+            await zipCodeInput.FocusAsync();
         }
     }
 
     private async Task SearchMembers()
     {
-        if (string.IsNullOrWhiteSpace(searchLastName) &&
-            string.IsNullOrWhiteSpace(searchFirstName) &&
-            string.IsNullOrWhiteSpace(searchEmail) &&
-            string.IsNullOrWhiteSpace(searchZipCode))
-        {
-            return;
-        }
-
         var query = DbContext.Members.AsQueryable();
+        bool hasSearchCriteria = false;
 
+        //ZipCode search
+        if (!string.IsNullOrWhiteSpace(editZipCode))
+        {
+            if (int.TryParse(editZipCode, out int zip))
+            {
+                query = query.Where(m => m.ZipCode == zip);
+                hasSearchCriteria = true;
+            }
+        }
+        //LastName search
         if (!string.IsNullOrWhiteSpace(searchLastName))
         {
             query = query.Where(m => m.LastName != null && m.LastName.Contains(searchLastName));
+            hasSearchCriteria = true;
         }
 
-        if (!string.IsNullOrWhiteSpace(searchFirstName))
+        //FirstName search
+        if (!string.IsNullOrWhiteSpace(editFirstName) && isEditing)
         {
-            query = query.Where(m => m.FirstName != null && m.FirstName.Contains(searchFirstName));
+            query = query.Where(m => m.FirstName != null && m.FirstName.Contains(editFirstName));
+            hasSearchCriteria = true;
         }
 
-        if (!string.IsNullOrWhiteSpace(searchEmail))
+        if(!hasSearchCriteria)
         {
-            query = query.Where(m => m.EmailAdr != null && m.EmailAdr.Contains(searchEmail));
+            StatusMessage("Enter search criteria", "text-warning");
+            return;
         }
 
-        if (!string.IsNullOrWhiteSpace(searchZipCode))
-        {
-            query = query.Where(m => m.ZipCode !=null && m.ZipCode.ToString()!.Contains(searchZipCode));
-        }
-
-        filteredMembers = await query
-            .OrderBy(m => m.LastName)
+        searchResults = await query
+            .OrderBy(m => m.ZipCode)
+            .ThenBy(m => m.LastName)
             .ThenBy(m => m.FirstName)
-            .Take(500)
+            .Take(100)
             .ToListAsync();
 
-        searchExecuted = true;
-        selectedMember = null;
-        focusedRowIndex = 0; // Focus first row
+        // Auto-select first result if only one found
+        if (searchResults.Count == 1)
+        {
+            SelectMember(0);
+        }
+        else if (searchResults.Count > 1)
+        {
+            focusedResultIndex = 0;
+        }
 
-        //Focus the table so arrow keys work immediately
-        StateHasChanged(); 
-        await Task.Delay(50); // Slight delay to ensure rendering is complete
-        await tableContainer.FocusAsync();
+        StatusMessage($"Found {searchResults.Count} members", "text-info");
+
+        //Auto-focus results if multiple found
+        if (searchResults.Count > 1)
+        {
+            _ = FocusResultsAfterRender();  // Fire and forget
+        }
     }
 
-    private void ClearSearch()
+    private void SelectMember(int index)
     {
-        searchLastName = "";
-        searchFirstName = "";
-        searchEmail = "";
-        searchZipCode = "";
-        filteredMembers.Clear();
-        selectedMember = null;
-        searchExecuted = false;
+        if (index < 0 || index >= searchResults.Count) return;
+
+        currentMember = searchResults[index];
+        focusedResultIndex = index;
+        isEditing = true;
+
+        // Populate form fields
+        editZipCode = currentMember.ZipCode?.ToString() ?? "";
+        editZipExt = currentMember.ZipExt?.ToString() ?? "";
+        editFirstName = currentMember.FirstName ?? "";
+        editMiddleName = currentMember.MiddleName ?? "";
+        editAddress1 = currentMember.Address1 ?? "";
+        editAddress2 = currentMember.Address2 ?? "";
+        editCity = currentMember.City ?? "";
+        editState = currentMember.State ?? "";
+        editEmail = currentMember.EmailAdr ?? "";
+        editAreaCode = currentMember.AreaCode ?? "";
+        editPhoneNo = currentMember.PhoneNo ?? "";
+        editOrdinDate = currentMember.OrdinDate;
+        editSubscrDate = currentMember.SubscrDate;
+        editCongrNum1 = currentMember.CongrNum?.ToString() ?? "";
+        editCongrNum2 = currentMember.CongrNum2?.ToString() ?? "";
+        editForeignAddress = currentMember.ForeignAddress ?? "";
+        editSameAdr = currentMember.SameAdr == 1;
+
+        StatusMessage("", "");
     }
 
-    private void SelectMember(Member member)
+    private void NewMember()
     {
-        selectedMember = member;
+        currentMember = new Member
+        {
+            MemberNo = 0, // Will be assigned later
+            ZipCode = int.TryParse(editZipCode, out int zip) ? zip : null,
+            LastName = searchLastName
+        };
+        isEditing = true;
+        ClearEditFields();
+        StatusMessage("Creating new member...", "text-primary");
     }
 
-    private async Task HandleTableKeyPress(KeyboardEventArgs e)
+    private async Task SaveMember()
     {
+        if (currentMember == null) return;
 
-        // Get the currently displayed results (limited to 100)
-        var displayedResults = filteredMembers.Take(100).ToList();
+        try
+        {
+            // Map form fields back to member object
+            currentMember.ZipCode = int.TryParse(editZipCode, out int zip) ? zip : null;
+            currentMember.ZipExt = short.TryParse(editZipExt, out short zipExt) ? zipExt : null;
+            currentMember.FirstName = editFirstName;
+            currentMember.MiddleName = editMiddleName;
+            currentMember.Address1 = editAddress1;
+            currentMember.Address2 = editAddress2;
+            currentMember.City = editCity;
+            currentMember.State = editState;
+            currentMember.EmailAdr = editEmail;
+            currentMember.AreaCode = editAreaCode;
+            currentMember.PhoneNo = editPhoneNo;
+            currentMember.OrdinDate = editOrdinDate;
+            currentMember.SubscrDate = editSubscrDate;
+            currentMember.CongrNum = int.TryParse(editCongrNum1, out int congr1) ? congr1 : null;
+            currentMember.CongrNum2 = int.TryParse(editCongrNum2, out int congr2) ? congr2 : null;
+            currentMember.ForeignAddress = editForeignAddress;
+            currentMember.SameAdr = (short)(editSameAdr ? 1 : 0);
+            currentMember.LastModifiedDttm = DateTime.Now;
 
-        if (!displayedResults.Any()) return;
+            // If new member (MemberNo = 0), add to context
+            if (currentMember.MemberPkId == 0)
+            {
+                DbContext.Members.Add(currentMember);
+            }
+
+            await DbContext.SaveChangesAsync();
+            StatusMessage("✓ Saved successfully", "text-success");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage($"Error: {ex.Message}", "text-danger");
+        }
+    }
+
+    private void HandleResultsKeyPress(KeyboardEventArgs e)
+    {
+        if (!searchResults.Any()) return;
 
         switch (e.Key)
         {
             case "ArrowDown":
-                // If no row is focused, focus the first row
-                if (focusedRowIndex < 0)
+                if (focusedResultIndex < searchResults.Count - 1)
                 {
-                    focusedRowIndex = 0;
+                    focusedResultIndex++;
+                    SelectMember(focusedResultIndex);
                 }
-                // Otherwise move down, wrapping to top if at bottom
-                else if (focusedRowIndex < displayedResults.Count - 1)
-                {
-                    focusedRowIndex++;
-                }
-                else
-                {
-                    focusedRowIndex = 0;
-                }
-                // auto select as you arrow
-                SelectMemberByIndex(focusedRowIndex);
                 break;
-
             case "ArrowUp":
-                // If no row focused yet, start at last row
-                if (focusedRowIndex < 0)
+                if (focusedResultIndex > 0)
                 {
-                    focusedRowIndex = displayedResults.Count - 1;
-                }
-                // Otherwise move up, wrapping to bottom if at top
-                else if (focusedRowIndex > 0)
-                {
-                    focusedRowIndex--;
-                }
-                else
-                {
-                    focusedRowIndex = displayedResults.Count - 1; // Wrap to bottom
-                }
-                SelectMemberByIndex(focusedRowIndex);
-                break;
-
-            case "Enter":
-                if (focusedRowIndex >= 0 && focusedRowIndex < displayedResults.Count)
-                {
-                    SelectMemberByIndex(focusedRowIndex);
+                    focusedResultIndex--;
+                    SelectMember(focusedResultIndex);
                 }
                 break;
-
-            case "Escape":
-                // Clear selection and reset focus
-                selectedMember = null;
-                focusedRowIndex = -1;
-                break;
-        }
-
-        //Prevent default browser behavior (like scrolling)
-        await Task.CompletedTask;
-
-    }
-
-    //Select a member by their index in the displayed results
-    private void SelectMemberByIndex(int index)
-    {
-        var displayedResults = filteredMembers.Take(100).ToList();
-        if (index >= 0 && index < displayedResults.Count)
-        {
-            SelectMember(displayedResults[index]);
-            focusedRowIndex = index;
         }
     }
 
-    //Determine CSS class for a row (handles both selection and focus)
-    private string GetRowClass(int index)
+    private void HandleGlobalKeyPress(KeyboardEventArgs e)
     {
-        var classes = new List<string>();
-
-        var displayedResults = filteredMembers.Take(100).ToList();
-
-        // Check if this row's member is selected
-        if (index < displayedResults.Count &&
-            selectedMember != null &&
-            displayedResults[index].MemberPkId == selectedMember.MemberPkId)
+        // F2 = Search
+        if (e.Key == "F2")
         {
-            classes.Add("row-selected");
+            SearchMembers();
         }
-
-        // Check if this row has keyboard focus
-        if (index == focusedRowIndex)
+        // F3 = New
+        else if (e.Key == "F3")
         {
-            classes.Add("row-focused");
+            NewMember();
         }
-
-        return string.Join(" ", classes);
+        // F4 = Toggle More Fields
+        else if (e.Key == "F4")
+        {
+            ToggleMoreFields();
+        }
+        // Alt+S = Save
+        else if (e.AltKey && e.Key == "s")
+        {
+            SaveMember();
+        }
     }
 
-    private string GetRowStyle(int index)
+    private void ToggleMoreFields()
     {
-        var displayedResults = filteredMembers.Take(100).ToList();
-        var styles = new List<string>();
+        showMoreFields = !showMoreFields;
+    }
 
-        // Always add cursor pointer
-        styles.Add("cursor: pointer");
-        styles.Add("padding: 8px");
+    private void ClearEditFields()
+    {
+        editZipCode = "";
+        editZipExt = "";
+        editFirstName = "";
+        editMiddleName = "";
+        editAddress1 = "";
+        editAddress2 = "";
+        editCity = "";
+        editState = "";
+        editEmail = "";
+        editAreaCode = "";
+        editPhoneNo = "";
+        editOrdinDate = null;
+        editSubscrDate = null;
+        editCongrNum1 = "";
+        editCongrNum2 = "";
+        editForeignAddress = "";
+        editSameAdr = false;
+    }
 
-        // Check if this row is selected
-        bool isSelected = selectedMember != null &&
-                          index < displayedResults.Count &&
-                          displayedResults[index].MemberPkId == selectedMember.MemberPkId;
+    private void StatusMessage(string message, string cssClass)
+    {
+        statusMessage = message;
+        statusMessageClass = cssClass;
+    }
 
-        // Check if this row has keyboard focus
-        bool isFocused = index == focusedRowIndex;
+    private string GetResultRowStyle(int index)
+    {
+        var styles = new List<string> { "cursor: pointer" };
 
-        // Both selected AND focused - PURPLE
-        if (isSelected && isFocused)
+        if (index == focusedResultIndex)
         {
-            styles.Add("background-color: #6f42c1");
-            styles.Add("color: white");
-            styles.Add("border-left: 6px solid #ffc107");
-            styles.Add("font-weight: 500");
-        }
-        // Just selected - BLUE
-        else if (isSelected)
-        {
-            styles.Add("background-color: #0d6efd");
-            styles.Add("color: white");
-            styles.Add("border-left: 4px solid #0a58ca");
-        }
-        // Just focused - PINK (temp test)
-        else if (isFocused)
-        {
-            styles.Add("background-color: #ff1493");  // Deep pink
-            styles.Add("color: white"); // Ensure text is readable
-            styles.Add("border-left: 6px solid #ffd700"); // Gold border
-            styles.Add("font-weight: 500");
+            styles.Add("background-color: #fff3cd");
+            styles.Add("border-left: 4px solid #ffc107");
         }
 
         return string.Join("; ", styles);
     }
 
-    private void HandleGlobalKeyPress(KeyboardEventArgs e)
+    private async Task FocusResultsAfterRender()
     {
-        //Alt+E = Edit selected member
-        if (e.AltKey && e.Key.ToLower() == "e" && selectedMember != null)
+        await Task.Delay(100); // Small delay to ensure rendering
+        try
         {
-            // Implement edit logic here
-            EditMember();
+            await resultsContainer.FocusAsync();
         }
-        // Alt+N = New member for future
-        if (e.AltKey && e.Key == "n")
+        catch
         {
-            //TODO: Navigate to new member page
-        }
-        else
-
-        // Escape = Close detail panel
-        if (e.Key == "Escape")
-        {
-            selectedMember = null;
-            focusedRowIndex = -1;
+            // Ignore focus errors
         }
     }
-
-    private void EditMember()
-    {
-        if (selectedMember == null) return;
-
-        // For now, just show an alert
-        //Later, we'll navigate to an edit page
-        //NavigationManager.NavigateTo($"/members/edit/{selectedMember.MemberNo}");
-
-        // TODO:  Implement edit functionality
-        Console.WriteLine($"Editing member {selectedMember.FirstName} {selectedMember.LastName}"); 
-    }
+}
 }
