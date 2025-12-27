@@ -1,0 +1,309 @@
+﻿@page "/members/{MemberNo:int}/certificates"
+@using AIX.Admin.Web.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-12">
+            @if (member == null)
+            {
+                <p>Loading...</p>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header" style="background-color: #0d6efd; color: white;">
+                        <h4 class="mb-0">
+                            Courses & Titles - Member #@member.MemberNo
+                            <br />
+                            <small>@member.FirstName @member.LastName</small>
+                        </h4>
+                    </div>
+                    <div class="card-body">
+
+                        @* Current Certifications List *@
+                        <h5>Current Certifications</h5>
+                        @if (!memberCourses.Any())
+                        {
+                            <p class="text-muted">No courses or titles assigned yet.</p>
+                        }
+                        else
+                        {
+                            <div class="list-group mb-4">
+                                @foreach (var mc in memberCourses.OrderBy(m => m.CtType).ThenBy(m => m.AssignedDate))
+                                {
+                                    <div class="list-group-item">
+                                        <div class="d-flex w-100 justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1">
+                                                    <span class="badge bg-@(mc.CtType == 'C' ? "primary" : "success")">
+                                                        @(mc.CtType == 'C' ? "Course" : "Title")
+                                                    </span>
+                                                    @mc.CourseTitle?.Desc1
+                                                </h6>
+                                                @if (!string.IsNullOrWhiteSpace(mc.CourseTitle?.Desc2))
+                                                {
+                                                    <p class="mb-1 text-muted">@mc.CourseTitle.Desc2</p>
+                                                }
+                                                <small class="text-muted">
+                                                    Assigned: @(mc.AssignedDate?.ToString("MM/dd/yyyy") ?? "No date")
+                                                </small>
+                                            </div>
+                                            <button class="btn btn-sm btn-danger"
+                                                    @onclick="() => RemoveCertificate(mc)">
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+
+                        @* Add New Certificate Form *@
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h5>Add New Course or Title</h5>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Type</label>
+                                        <div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input"
+                                                       type="radio"
+                                                       name="ctType"
+                                                       id="typeCourse"
+                                                       value="C"
+                                                       @onchange="@(() => selectedType = 'C')"
+                                                       checked="@(selectedType == 'C')" />
+                                                <label class="form-check-label" for="typeCourse">
+                                                    Course
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input class="form-check-input"
+                                                       type="radio"
+                                                       name="ctType"
+                                                       id="typeTitle"
+                                                       value="T"
+                                                       @onchange="@(() => selectedType = 'T')"
+                                                       checked="@(selectedType == 'T')" />
+                                                <label class="form-check-label" for="typeTitle">
+                                                    Title
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label">Select @(selectedType == 'C' ? "Course" : "Title")</label>
+                                        <select class="form-select" @bind="selectedCourseNumber">
+                                            <option value="">-- Select --</option>
+                                            @foreach (var course in availableCourses.Where(c => c.CtType == selectedType).OrderBy(c => c.Desc1))
+                                            {
+                                                <option value="@course.CtNumber">
+                                                    @course.Desc1 @(!string.IsNullOrWhiteSpace(course.Desc2) ? $"({course.Desc2})" : "")
+                                                </option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Date Assigned</label>
+                                        <input type="date"
+                                               class="form-control"
+                                               @bind="assignedDate" />
+                                    </div>
+                                    <div class="col-md-2 d-flex align-items-end">
+                                        <button class="btn btn-success w-100"
+                                                @onclick="AddCertificate"
+                                                disabled="@(string.IsNullOrEmpty(selectedCourseNumber))">
+                                            Add
+                                        </button>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(statusMessage))
+                                {
+                                    <div class="alert @statusMessageClass mt-3 mb-0">
+                                        @statusMessage
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @* Navigation *@
+                        <div class="mt-3">
+                            <button class="btn btn-secondary" @onclick="GoBack">
+                                ← Back to Member
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int MemberNo { get; set; }
+
+    private Member? member;
+    private List<MemberCourse> memberCourses = new();
+    private List<CourseTitle> availableCourses = new();
+
+    private char selectedType = 'C';  // Default to Course
+    private string selectedCourseNumber = "";
+    private DateOnly? assignedDate = DateOnly.FromDateTime(DateTime.Today);
+
+    private string statusMessage = "";
+    private string statusMessageClass = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load member
+        member = await DbContext.Members
+            .FirstOrDefaultAsync(m => m.MemberNo == MemberNo);
+
+        if (member != null)
+        {
+            await LoadMemberCourses();
+            await LoadAvailableCourses();
+        }
+    }
+
+    private async Task LoadMemberCourses()
+    {
+        // Get all member courses
+        memberCourses = await DbContext.MemberCourses
+            .Where(mc => mc.MemberNo == MemberNo)
+            .OrderBy(mc => mc.CtType)
+            .ThenBy(mc => mc.AssignedDate)
+            .ToListAsync();
+
+        // Manually load each course title (composite key issue)
+        foreach (var mc in memberCourses)
+        {
+            var courseTitle = await DbContext.CourseTitles
+                .FirstOrDefaultAsync(ct => ct.CtType == mc.CtType && ct.CtNumber == mc.CtNumber);
+
+            if (courseTitle != null)
+            {
+                mc.CourseTitle = courseTitle;
+            }
+        }
+
+        Console.WriteLine($"DEBUG: Loaded {memberCourses.Count} courses for member {MemberNo}");
+        foreach (var mc in memberCourses)
+        {
+            Console.WriteLine($"  - {mc.CtType}{mc.CtNumber}: {mc.CourseTitle?.Desc1 ?? "NULL"}");
+        }
+    }
+
+    private async Task LoadAvailableCourses()
+    {
+        availableCourses = await DbContext.CourseTitles
+            .OrderBy(ct => ct.CtType)
+            .ThenBy(ct => ct.Desc1)
+            .ToListAsync();
+    }
+
+    private async Task AddCertificate()
+    {
+        if (string.IsNullOrEmpty(selectedCourseNumber) || member == null)
+        {
+            return;
+        }
+
+        if (!short.TryParse(selectedCourseNumber, out short courseNum))
+        {
+            ShowStatus("Invalid course number", "alert-danger");
+            return;
+        }
+
+        // Check if already assigned
+        var exists = memberCourses.Any(mc => mc.CtType == selectedType && mc.CtNumber == courseNum);
+        if (exists)
+        {
+            ShowStatus("This course/title is already assigned to this member", "alert-warning");
+            return;
+        }
+
+        try
+        {
+            var newCert = new MemberCourse
+            {
+                MemberNo = MemberNo,
+                CtType = selectedType,
+                CtNumber = courseNum,
+                AssignedDate = assignedDate
+            };
+
+            DbContext.MemberCourses.Add(newCert);
+            await DbContext.SaveChangesAsync();
+
+            // Reload the list
+            await LoadMemberCourses();
+
+            // Clear form
+            selectedCourseNumber = "";
+            assignedDate = DateOnly.FromDateTime(DateTime.Today);
+
+            ShowStatus("✓ Certificate added successfully", "alert-success");
+        }
+        catch (Exception ex)
+        {
+            ShowStatus($"Error: {ex.Message}", "alert-danger");
+        }
+    }
+
+    private async Task RemoveCertificate(MemberCourse mc)
+    {
+        if (!await ConfirmRemove(mc))
+        {
+            return;
+        }
+
+        try
+        {
+            DbContext.MemberCourses.Remove(mc);
+            await DbContext.SaveChangesAsync();
+
+            await LoadMemberCourses();
+
+            ShowStatus("✓ Certificate removed", "alert-success");
+        }
+        catch (Exception ex)
+        {
+            ShowStatus($"Error: {ex.Message}", "alert-danger");
+        }
+    }
+
+    private async Task<bool> ConfirmRemove(MemberCourse mc)
+    {
+        // For now, just return true
+        // Later you can add a confirmation dialog
+        return true;
+    }
+
+    private void ShowStatus(string message, string cssClass)
+    {
+        statusMessage = message;
+        statusMessageClass = cssClass;
+
+        // Auto-clear success messages after 3 seconds
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                statusMessage = "";
+                await InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/members?selectMember={MemberNo}");
+    }
+}

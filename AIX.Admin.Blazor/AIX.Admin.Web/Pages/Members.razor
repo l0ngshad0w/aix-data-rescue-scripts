@@ -2,6 +2,7 @@
 @using AIX.Admin.Web.Data.Entities
 @using Microsoft.EntityFrameworkCore
 @inject AppDbContext DbContext
+@inject NavigationManager Navigation
 
 <div class="container-fluid mt-3" @onkeydown="HandleGlobalKeyPress" tabindex="-1">
     <div class="row">
@@ -63,8 +64,8 @@
                                        class="form-control"
                                        @bind="editFirstName"
                                        tabindex="4"
-                                       maxlength="40"
-                                       disabled="@(!isEditing)" />
+                                       maxlength="40" />
+                                       @* disabled="false" *@
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Middle</label>
@@ -243,6 +244,9 @@
                                 <button type="button" class="btn btn-success ms-2" @onclick="NewMember" tabindex="20">
                                     New (F3)
                                 </button>
+                                <button class="btn btn-info me-2" @onclick="ManageCertificates">
+                                    Manage Certificates
+                                </button>
                                 <button type="button"
                                         class="btn btn-warning ms-2"
                                         @onclick="SaveMember"
@@ -310,12 +314,17 @@
 </div>
 
 @code {
-        // Element references
+
+    // Query parameters
+    [SupplyParameterFromQuery(Name = "selectMember")]
+    public int? SelectMemberNo { get; set; }
+
+    // Element references
     private ElementReference zipCodeInput;
     private ElementReference resultsContainer;
 
     // Search fields
-   // private string searchZipCode = "";
+    // private string searchZipCode = "";
     private string searchLastName = "";
 
     // Edit fields (bound to form)
@@ -347,6 +356,25 @@
     private string statusMessage = "";
     private string statusMessageClass = "";
 
+    protected override async Task OnInitializedAsync()
+    {
+        // If returning from certificates page, auto-select member
+        if (SelectMemberNo.HasValue)
+        {
+            editZipCode = "";
+            searchLastName = "";
+
+            var member = await DbContext.Members
+                .FirstOrDefaultAsync(m => m.MemberNo == SelectMemberNo.Value);
+
+            if (member != null)
+            {
+                searchResults = new List<Member> { member };
+                SelectMember(0);
+            }
+        }
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
@@ -377,7 +405,7 @@
         }
 
         //FirstName search
-        if (!string.IsNullOrWhiteSpace(editFirstName) && isEditing)
+        if (!string.IsNullOrWhiteSpace(editFirstName))
         {
             query = query.Where(m => m.FirstName != null && m.FirstName.Contains(editFirstName));
             hasSearchCriteria = true;
@@ -498,6 +526,12 @@
             StatusMessage($"Error: {ex.Message}", "text-danger");
         }
     }
+    
+    private void ManageCertificates()
+    {
+        if (currentMember == null) return;
+        Navigation.NavigateTo($"/members/{currentMember.MemberNo}/certificates");
+    }
 
     private void HandleResultsKeyPress(KeyboardEventArgs e)
     {
@@ -603,5 +637,5 @@
             // Ignore focus errors
         }
     }
-}
+
 }
