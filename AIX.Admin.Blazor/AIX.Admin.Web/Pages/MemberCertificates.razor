@@ -4,7 +4,7 @@
 @inject AppDbContext DbContext
 @inject NavigationManager Navigation
 
-<div class="container-fluid mt-3">
+<div class="container-fluid mt-3" @onkeydown="HandleKeyPress" tabindex="-1" @ref="containerRef">
     <div class="row">
         <div class="col-12">
             @if (member == null)
@@ -133,7 +133,7 @@
                         @* Navigation *@
                         <div class="mt-3">
                             <button class="btn btn-secondary" @onclick="GoBack">
-                                ← Back to Member
+                                ← Back to Member (F4 or Esc)
                             </button>
                         </div>
                     </div>
@@ -147,6 +147,7 @@
     [Parameter]
     public int MemberNo { get; set; }
 
+    private ElementReference containerRef;
     private Member? member;
     private List<MemberCourse> memberCourses = new();
     private List<CourseTitle> availableCourses = new();
@@ -168,6 +169,15 @@
         {
             await LoadMemberCourses();
             await LoadAvailableCourses();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+          await Task.Delay(100);
+            await containerRef.FocusAsync();
         }
     }
 
@@ -301,7 +311,20 @@
             });
         }
     }
+    private void HandleKeyPress(KeyboardEventArgs e)
+    {
+        // F4 = Go back to Member
+        if (e.Key == "F4")
+        {
+            GoBack();
+        }
 
+        // Esc = Also go back to Member
+        else if (e.Key == "Escape")
+        {
+            GoBack();
+        }
+    }
     private void GoBack()
     {
         Navigation.NavigateTo($"/members?selectMember={MemberNo}");

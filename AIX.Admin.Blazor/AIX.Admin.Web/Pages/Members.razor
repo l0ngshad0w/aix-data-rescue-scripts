@@ -245,7 +245,7 @@
                                     New (F3)
                                 </button>
                                 <button class="btn btn-info me-2" @onclick="ManageCertificates">
-                                    Manage Certificates
+                                    Manage Certificates (F4)
                                 </button>
                                 <button type="button"
                                         class="btn btn-warning ms-2"
@@ -258,8 +258,15 @@
                                         class="btn btn-secondary ms-2"
                                         @onclick="ToggleMoreFields"
                                         tabindex="22">
-                                    @(showMoreFields ? "Less" : "More...") (F4)
+                                    @(showMoreFields ? "Less" : "More...") (F8)
                                 </button>
+                                <button type="button" 
+                                    class="btn btn-outline-secondary ms-2"
+                                        @onclick="ClearScreen"
+                                    tabindex="23">
+                                    Clear (Esc)
+                                </button>
+
                                 @if (!string.IsNullOrEmpty(statusMessage))
                                 {
                                     <span class="ms-3 @statusMessageClass">@statusMessage</span>
@@ -473,17 +480,83 @@
         StatusMessage("", "");
     }
 
-    private void NewMember()
+    private async Task NewMember()
     {
+
+        // Get the next available MemberNo
+        var maxMemberNo = await DbContext.Members.MaxAsync(m => (int?)m.MemberNo) ?? 0;
+
+        var nextMemberNo = maxMemberNo + 1;
+
+        // Create new member with default values
         currentMember = new Member
-        {
-            MemberNo = 0, // Will be assigned later
-            ZipCode = int.TryParse(editZipCode, out int zip) ? zip : null,
-            LastName = searchLastName
-        };
+                {
+                    MemberNo = nextMemberNo,
+                    ZipCode = int.TryParse(editZipCode, out int zip) ? zip : null,
+                    LastName = searchLastName,
+                    FirstName = editFirstName,
+                    LastModifiedDttm = DateTime.Now
+                };
+
+
         isEditing = true;
+
+        // Pre-fill zip if searched by Zip
+        if (!string.IsNullOrWhiteSpace(editZipCode))
+        {
+            // Keep the zip in the form
+        }
+        else
+        {
+            editZipCode = "";
+        }
+
+        // Clear other fields for new entry
+        editZipExt = "";
+        editMiddleName = "";
+        editAddress1 = "";
+        editAddress2 = "";
+        editCity = "";
+        editState = "";
+        editEmail = "";
+        editAreaCode = "";
+        editPhoneNo = "";
+        editOrdinDate = null;
+        editSubscrDate = null;
+        editCongrNum1 = "";
+        editCongrNum2 = "";
+        editForeignAddress = "";
+        editSameAdr = false;
+
+        //Clear results
+        searchResults.Clear();
+
+        StatusMessage($"Creating new member #{nextMemberNo}...", "text-primary");
+
+    }
+
+
+
+    private void ClearScreen()
+    {
+        // Clear search fields
+        editZipCode = "";
+        searchLastName = "";
+        editFirstName = "";
+
+        // Clear results
+        searchResults.Clear();
+
+        // Clear current member
+        currentMember = null;
+        isEditing = false;
+        focusedResultIndex = -1;
+
+        //Clear all edit fields
         ClearEditFields();
-        StatusMessage("Creating new member...", "text-primary");
+
+        // Clear status message
+        StatusMessage("Screen cleared", "text-secondary");
     }
 
     private async Task SaveMember()
@@ -497,6 +570,7 @@
             currentMember.ZipExt = short.TryParse(editZipExt, out short zipExt) ? zipExt : null;
             currentMember.FirstName = editFirstName;
             currentMember.MiddleName = editMiddleName;
+            currentMember.LastName = searchLastName;
             currentMember.Address1 = editAddress1;
             currentMember.Address2 = editAddress2;
             currentMember.City = editCity;
@@ -512,21 +586,52 @@
             currentMember.SameAdr = (short)(editSameAdr ? 1 : 0);
             currentMember.LastModifiedDttm = DateTime.Now;
 
-            // If new member (MemberNo = 0), add to context
+            // Check if this is a new member (no PK assinged yet)
             if (currentMember.MemberPkId == 0)
             {
+                if (string.IsNullOrWhiteSpace(currentMember.LastName))
+                {
+                    StatusMessage("Last Name is required", "text-danger");
+                    return;
+
+                }
+
+                //Check if member_no already exists (safety check)
+                var exists = await DbContext.Members
+                    .AnyAsync(m => m.MemberNo == currentMember.MemberNo);
+
+                if (exists)
+                {
+                    StatusMessage($"Error: Member #{currentMember.MemberNo} already exists", "text-danger");
+                    return;
+                }
+
                 DbContext.Members.Add(currentMember);
+                StatusMessage($"✓ New member #{currentMember.MemberNo} created successfully", "text-success");
+
+            }
+            else
+            {
+                // Existing member - update
+                StatusMessage(" ✓ Member updated successfully", "text-success"); 
             }
 
             await DbContext.SaveChangesAsync();
-            StatusMessage("✓ Saved successfully", "text-success");
+
+            // Auto-clear message after 3 seconds
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                StatusMessage("", "");
+            });
+
         }
         catch (Exception ex)
         {
             StatusMessage($"Error: {ex.Message}", "text-danger");
         }
     }
-    
+
     private void ManageCertificates()
     {
         if (currentMember == null) return;
@@ -568,8 +673,13 @@
         {
             NewMember();
         }
-        // F4 = Toggle More Fields
-        else if (e.Key == "F4")
+        // F4 = Manage Certificates
+        else if (e.Key == "F4" && currentMember != null)
+        {
+            ManageCertificates();
+        }
+        // F8  = Toggle More Fields
+        else if (e.Key == "F8")
         {
             ToggleMoreFields();
         }
@@ -577,6 +687,11 @@
         else if (e.AltKey && e.Key == "s")
         {
             SaveMember();
+        }
+        // Esc = Clear
+        else if (e.Key == "Escape")
+        {
+            ClearScreen();
         }
     }
 
@@ -638,4 +753,47 @@
         }
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        // If returning from certificates page, auto-select member
+        if (SelectMemberNo.HasValue && SelectMemberNo.Value > 0)
+        {
+
+            // Find the member by member no
+            var member = await DbContext.Members
+                .FirstOrDefaultAsync(m => m.MemberNo == SelectMemberNo.Value);
+
+            if (member != null)
+            {
+                searchResults = new List<Member> { member };
+
+                // Select them (populate form)
+                currentMember = member;
+                focusedResultIndex = 0;
+                isEditing = true;
+
+                //Populate form fields
+                editZipCode = member.ZipCode?.ToString() ?? "";
+                editZipExt = member.ZipExt?.ToString() ?? "";
+                searchLastName = member.LastName ?? "";
+                editFirstName = member.FirstName ?? "";
+                editMiddleName = member.MiddleName ?? "";
+                editAddress1 = member.Address1 ?? "";
+                editAddress2 = member.Address2 ?? "";
+                editCity = member.City ?? "";
+                editState = member.State ?? "";
+                editEmail = member.EmailAdr ?? "";
+                editAreaCode = member.AreaCode ?? "";
+                editPhoneNo = member.PhoneNo ?? "";
+                editOrdinDate = member.OrdinDate;
+                editSubscrDate = member.SubscrDate;
+                editCongrNum1 = member.CongrNum?.ToString() ?? "";
+                editCongrNum2 = member.CongrNum2?.ToString() ?? "";
+                editForeignAddress = member.ForeignAddress ?? "";
+                editSameAdr = member.SameAdr == 1;
+
+                StatusMessage($"Viewing member #{member.MemberNo}", "text-info");
+            }
+        }
+    }
 }
