@@ -1,24 +1,36 @@
 @inherits LayoutComponentBase
 
-<MudThemeProvider />
-<MudDialogProvider />
-<MudSnackbarProvider />
-<MudPopoverProvider />
-
-<PageTitle>ChurchApp</PageTitle>
+<PageTitle>AIX Church Admin</PageTitle>
 
 <div class="page">
     <div class="sidebar">
         <NavMenu />
     </div>
-
     <main>
-        <div class="top-row px-4">
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
         <article class="content px-4">
             @Body
         </article>
     </main>
 </div>
+
+<style>
+    .page {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+    }
+
+    .sidebar {
+        background-color: #f8f9fa;
+    }
+
+    main {
+        flex: 1;
+    }
+
+    .content {
+        padding: 2rem 1rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+</style>

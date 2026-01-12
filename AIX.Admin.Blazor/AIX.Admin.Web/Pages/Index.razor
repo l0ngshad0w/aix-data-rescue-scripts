@@ -1,3 +1,81 @@
-@page "/"
-<h1>Welcome</h1>
-<p>Use the left nav to manage data.  Start with <a href="/members">Members</a>.</p>
+﻿@page "/"
+
+<div class="card">
+    <div class="card-body">
+        <h1>Welcome to the ULC Church Admin App</h1>
+        <p>Use the navigation above to manage members and courses.</p>
+
+        <hr />
+
+        <h5>Keyboard Shortcuts</h5>
+        <div class="row">
+            <div class="col-md-6">
+                <h6>General Navigation</h6>
+                <ul>
+                    <li><kbd>F2</kbd> - Search members</li>
+                    <li><kbd>F3</kbd> - Add new member</li>
+                    <li><kbd>F4</kbd> - Manage certificates (toggle)</li>
+                    <li><kbd>F8</kbd> - Show/hide additional fields</li>
+                    <li><kbd>Esc</kbd> - Clear form / Go back</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6>While Editing</h6>
+                <ul>
+                    <li><kbd>Alt</kbd> + <kbd>S</kbd> - Save changes</li>
+                    <li><kbd>Enter</kbd> - Search / Submit</li>
+                    <li><kbd>↑</kbd> <kbd>↓</kbd> - Navigate search results</li>
+                    <li><kbd>Tab</kbd> - Move between fields</li>
+                </ul>
+            </div>
+        </div>
+
+        <hr />
+
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5>👥 Members</h5>
+                        <p>Search, add, and edit member records</p>
+                        <a href="/members" class="btn btn-primary">Go to Members</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5>⚙️ Course Admin</h5>
+                        <p>Manage courses and titles</p>
+                        <a href="/admin/courses" class="btn btn-primary">Go to Course Admin</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body text-center">
+                        <h5>ℹ️ System Info</h5>
+                        <p class="mb-1"><strong>Version:</strong> 1.0.0</p>
+                        <p class="mb-1"><strong>Database:</strong> ChurchDB</p>
+                        <p class="mb-0"><small>Need help? Contact Josh</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    kbd {
+        background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+        border: 1px solid #adb5bd;
+        border-radius: 0.25rem;
+        padding: 0.2rem 0.5rem;
+        font-size: 0.875rem;
+        font-family: monospace;
+        color: #212529;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.5);
+        text-transform: uppercase;
+    }
+</style>

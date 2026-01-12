@@ -1,7 +1,50 @@
-<nav>
-  <ul>
-    <li><NavLink href="/">Home</NavLink></li>
-    <li><NavLink href="/members">Members</NavLink></li>
-    <li><NavLink href="/admin/courses">Course Admin</NavLink></li>
-  </ul>
-</nav>
+﻿<div class="nav-menu">
+    <nav>
+        <ul>
+            <li><a href="/">🏠 Home</a></li>
+            <li><a href="/members">👥 Members</a></li>
+            <li><a href="/admin/courses">⚙️ Course Admin</a></li>
+        </ul>
+    </nav>
+ </div> 
+
+<style>
+    .nav-menu {
+        background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 0.75rem 1rem;
+    }
+
+        .nav-menu nav ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            gap: 1.5rem;
+        }
+
+            .nav-menu nav ul li {
+                display: inline-block;
+            }
+
+                .nav-menu nav ul li a {
+                    text-decoration: none;
+                    color: #212529;
+                    font-weight: 500;
+                    padding: 0.5rem 1rem;
+                    border-radius: 0.25rem;
+                    transition: all 0.2s;
+                }
+
+                    .nav-menu nav ul li a:hover {
+                        background-color: #e9ecef;
+                        color: #0d6efd;
+                    }
+
+                    .nav-menu nav ul li a:active,
+                    .nav-menu nav ul li a.active {
+                        background-color: #0d6efd;
+                        color: white;
+                    }
+
+</style>
