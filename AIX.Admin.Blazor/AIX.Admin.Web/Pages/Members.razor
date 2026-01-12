@@ -64,8 +64,8 @@
                                        class="form-control"
                                        @bind="editFirstName"
                                        tabindex="4"
-                                       maxlength="40" />
-                                       @* disabled="false" *@
+                                       maxlength="40"
+                                       placeholder = "Enter first name" />
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">Middle</label>
@@ -75,6 +75,40 @@
                                        tabindex="5"
                                        maxlength="40"
                                        disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+
+                        @* New Row:  Course/Title Search*@
+                        <div class="row mb-2">
+                            <div class="col-md-12">
+                                <label class="form-label">
+                                    <strong>OR</strong> Search by Course/Title
+                                </label>
+                            <div class="input-group">
+                                <select class="form-select" @bind="searchCourseType" style="max-width: 100px;">
+                                    <option value="">Any</option>
+                                    <option value="C">Course</option>
+                                    <option value="T">Title</option>
+                                </select>
+                                <input type="number"
+                                    class="form-control"
+                                    @bind="searchCourseNumber"
+                                    placeholder="Enter course/title number (e.g., 166)"
+                                    style="max-width: 250px;" />
+                                <button class="btn btn-outline-secondary" type="button" @onclick="LookupCourse">
+                                        🔍 Lookup
+                                </button>
+                                </div>
+                                @if (lookupCourseName != null)
+                                {
+                                    <small class="text-success">
+                                        ✓ Found: @lookupCourseName
+                                    </small>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(searchCourseNumber))
+                                {
+                                    <small class="text-muted">Enter number and click Lookup to verify</small>
+                                }
                             </div>
                         </div>
 
@@ -149,7 +183,7 @@
                                        @bind="editAreaCode"
                                        tabindex="11"
                                        maxlength="10"
-                                       placeholder="(209)"
+                                       placeholder=""
                                        disabled="@(!isEditing)" />
                             </div>
                             <div class="col-md-9">
@@ -326,6 +360,12 @@
     [SupplyParameterFromQuery(Name = "selectMember")]
     public int? SelectMemberNo { get; set; }
 
+    [SupplyParameterFromQuery(Name = "courseType")]
+    public string? CourseTypeParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "courseNum")]
+    public string? CourseNumParam { get; set; }
+
     // Element references
     private ElementReference zipCodeInput;
     private ElementReference resultsContainer;
@@ -352,6 +392,11 @@
     private string editCongrNum2 = "";
     private string editForeignAddress = "";
     private bool editSameAdr = false;
+
+    // Course search fields (New)
+    private string searchCourseType = "";
+    private string searchCourseNumber = "";
+    private string? lookupCourseName = null;
 
 
     // State
@@ -418,6 +463,33 @@
             hasSearchCriteria = true;
         }
 
+        // NEW: Course/Title search
+        if (!string.IsNullOrWhiteSpace(searchCourseNumber))
+        {
+            if (short.TryParse(searchCourseNumber, out short courseNum))
+            {
+                // Get member_no values who have this course
+                var memberNosWithCourse = DbContext.MemberCourses
+                    .Where(mc => mc.CtNumber == courseNum);
+
+                // Filter by type if specified
+                if (!string.IsNullOrWhiteSpace(searchCourseType))
+                {
+                    char type = searchCourseType[0];
+                    memberNosWithCourse = memberNosWithCourse.Where(mc => mc.CtType == type);
+                }
+
+                var memberNoList = await memberNosWithCourse
+                    .Select(mc => mc.MemberNo)
+                    .Distinct()
+                    .ToListAsync();
+
+                // Filter members by these member_no values
+                query = query.Where(m => memberNoList.Contains(m.MemberNo));
+                hasSearchCriteria = true;
+            }
+        }
+
         if(!hasSearchCriteria)
         {
             StatusMessage("Enter search criteria", "text-warning");
@@ -443,11 +515,6 @@
 
         StatusMessage($"Found {searchResults.Count} members", "text-info");
 
-        //Auto-focus results if multiple found
-        if (searchResults.Count > 1)
-        {
-            _ = FocusResultsAfterRender();  // Fire and forget
-        }
     }
 
     private void SelectMember(int index)
@@ -543,6 +610,9 @@
         editZipCode = "";
         searchLastName = "";
         editFirstName = "";
+        searchCourseType = "";      // NEW
+        searchCourseNumber = "";    // NEW
+        lookupCourseName = null;    // NEW
 
         // Clear results
         searchResults.Clear();
@@ -636,6 +706,35 @@
     {
         if (currentMember == null) return;
         Navigation.NavigateTo($"/members/{currentMember.MemberNo}/certificates");
+    }
+
+    private async Task LookupCourse()
+    {
+        lookupCourseName = null;
+        if (string.IsNullOrWhiteSpace(searchCourseNumber))
+        {
+            return;
+        }
+        if (!short.TryParse(searchCourseNumber, out short courseNum))
+        {
+            return;
+        }
+
+        // Build query based on type
+        var query = DbContext.CourseTitles.AsQueryable();
+
+        if(!string.IsNullOrWhiteSpace(searchCourseType))
+        {
+            char type = searchCourseType[0];
+            query = query.Where(ctor => ctor.CtType == type);
+        }
+
+        var course = await query.FirstOrDefaultAsync(ctor => ctor.CtNumber == courseNum);
+
+        if (course != null)
+            {
+                lookupCourseName = $"{(course.CtType == 'C' ? "Course" : "Title")} #{course.CtNumber}: {course.Desc1}";
+            }
     }
 
     private void HandleResultsKeyPress(KeyboardEventArgs e)
@@ -753,7 +852,7 @@
         }
     }
 
-    protected override async Task OnParametersSetAsync()
+        protected override async Task OnParametersSetAsync()
     {
         // If returning from certificates page, auto-select member
         if (SelectMemberNo.HasValue && SelectMemberNo.Value > 0)
@@ -766,13 +865,11 @@
             if (member != null)
             {
                 searchResults = new List<Member> { member };
-
-                // Select them (populate form)
                 currentMember = member;
                 focusedResultIndex = 0;
                 isEditing = true;
 
-                //Populate form fields
+                // Populate form fields (existing code)
                 editZipCode = member.ZipCode?.ToString() ?? "";
                 editZipExt = member.ZipExt?.ToString() ?? "";
                 searchLastName = member.LastName ?? "";
@@ -794,6 +891,19 @@
 
                 StatusMessage($"Viewing member #{member.MemberNo}", "text-info");
             }
+        }
+
+        // NEW: If coming from Course Admin, auto-fill course search
+        if (!string.IsNullOrWhiteSpace(CourseTypeParam) && !string.IsNullOrWhiteSpace(CourseNumParam))
+        {
+            searchCourseType = CourseTypeParam;
+            searchCourseNumber = CourseNumParam;
+
+            // Auto-lookup the course name
+            await LookupCourse();
+
+            // Auto-search
+            await SearchMembers();
         }
     }
 }

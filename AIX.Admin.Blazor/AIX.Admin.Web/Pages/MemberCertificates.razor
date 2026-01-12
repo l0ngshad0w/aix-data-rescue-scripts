@@ -176,7 +176,7 @@
     {
         if (firstRender)
         {
-          await Task.Delay(100);
+            await Task.Delay(100);
             await containerRef.FocusAsync();
         }
     }
@@ -251,6 +251,11 @@
             DbContext.MemberCourses.Add(newCert);
             await DbContext.SaveChangesAsync();
 
+            // Update Member Timestamp
+            member.LastModifiedDttm = DateTime.Now;
+
+            await DbContext.SaveChangesAsync();
+
             // Reload the list
             await LoadMemberCourses();
 
@@ -276,6 +281,13 @@
         try
         {
             DbContext.MemberCourses.Remove(mc);
+
+            // Update Member Timestamp
+            if (member != null)
+            {
+                member.LastModifiedDttm = DateTime.Now;
+            }
+
             await DbContext.SaveChangesAsync();
 
             await LoadMemberCourses();

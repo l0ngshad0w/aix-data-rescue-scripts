@@ -1,0 +1,400 @@
+﻿@page "/admin/courses"
+@using AIX.Admin.Web.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@inject AppDbContext DbContext
+@inject NavigationManager Navigation
+
+<div class="container-fluid mt-3">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header" style="background-color: #6610f2; color: white;">
+                    <h4 class="mb-0">Course & Title Administration</h4>
+                </div>
+                <div class="card-body">
+                    
+                    @* Add New Button *@
+                    <div class="mb-3">
+                        <button class="btn btn-success" @onclick="ShowAddForm">
+                            ➕ Add New Course/Title
+                        </button>
+                        <button class="btn btn-secondary ms-2" @onclick="GoBack">
+                            ← Back to Members
+                        </button>
+                    </div>
+
+                    @* Add/Edit Form (shown when adding or editing) *@
+                    @if (showForm)
+                    {
+                        <div class="card bg-light mb-4">
+                            <div class="card-body">
+                                <h5>@(editingCourse == null ? "Add New" : "Edit") Course/Title</h5>
+                                <div class="row">
+                                    <div class="col-md-2">
+                                        <label class="form-label">Type</label>
+                                        <div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="radio" 
+                                                       name="formType" 
+                                                       disabled="@(editingCourse != null)" />
+                                                <label class="form-check-label">Course</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="radio" 
+                                                       name="formType" 
+                                                       @bind="formType"
+                                                       disabled="@(editingCourse != null)" />
+                                                <label class="form-check-label">Title</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Number</label>
+                                        <input type="number" 
+                                               class="form-control" 
+                                               @bind="formNumber"
+                                               disabled="@(editingCourse != null)"
+                                               min="1" 
+                                               max="32767" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Description 1 (Primary)</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               @bind="formDesc1"
+                                               maxlength="100"
+                                               placeholder="e.g., Doctor of Philosophy in Religion" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Description 2 (Optional)</label>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               @bind="formDesc2"
+                                               maxlength="50"
+                                               placeholder="e.g., Advanced Studies" />
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <button class="btn btn-primary" @onclick="SaveCourse">
+                                            💾 Save
+                                        </button>
+                                        <button class="btn btn-secondary ms-2" @onclick="CancelForm">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(statusMessage))
+                    {
+                        <div class="alert @statusMessageClass">
+                            @statusMessage
+                            @if (courseWithMembers != null)
+                            {
+                                <button class="btn btn-sm btn-outline-danger ms-3" @onclick="ShowMembersWithCourse">
+                                    View @assignedMemberCount Member(s) →
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @* Search/Filter *@
+                    <div class="mb-3">
+                        <input type="text" 
+                               class="form-control" 
+                               @bind="searchText"
+                               @bind:event="oninput"
+                               placeholder="🔍 Search courses/titles by number or description..."
+                               style="max-width: 500px;" />
+                    </div>
+
+                    @* Status Message *@
+                    @if (!string.IsNullOrEmpty(statusMessage))
+                    {
+                        <div class="alert @statusMessageClass">
+                            @statusMessage
+                        </div>
+                    }
+
+                    @* Courses Section *@
+                    <h5 class="mt-4">Courses (C) - @filteredCourses.Count(c => c.CtType == 'C') total</h5>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-hover">
+                            <thead style="position: sticky; top: 0; background-color: #f8f9fa;">
+                                <tr>
+                                    <th>Number</th>
+                                    <th>Description</th>
+                                    <th>Subtitle</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var course in filteredCourses.Where(c => c.CtType == 'C').OrderBy(c => c.CtNumber))
+                                {
+                                    <tr>
+                                        <td><strong>@course.CtNumber</strong></td>
+                                        <td>@course.Desc1</td>
+                                        <td><small class="text-muted">@course.Desc2</small></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" @onclick="() => EditCourse(course)">
+                                                ✏️ Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-danger ms-1" @onclick="() => DeleteCourse(course)">
+                                                🗑️ Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @* Titles Section *@
+                    <h5 class="mt-4">Titles (T) - @filteredCourses.Count(c => c.CtType == 'T') total</h5>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-hover">
+                            <thead style="position: sticky; top: 0; background-color: #f8f9fa;">
+                                <tr>
+                                    <th>Number</th>
+                                    <th>Description</th>
+                                    <th>Subtitle</th>
+                                    <th style="width: 150px;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var title in filteredCourses.Where(c => c.CtType == 'T').OrderBy(c => c.CtNumber))
+                                {
+                                    <tr>
+                                        <td><strong>@title.CtNumber</strong></td>
+                                        <td>@title.Desc1</td>
+                                        <td><small class="text-muted">@title.Desc2</small></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" @onclick="() => EditCourse(title)">
+                                                ✏️ Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-danger ms-1" @onclick="() => DeleteCourse(title)">
+                                                🗑️ Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<CourseTitle> allCourses = new();
+    private List<CourseTitle> filteredCourses = new();
+
+
+    private string searchText = "";
+    private bool showForm = false;
+    private CourseTitle? editingCourse = null;
+
+    // Form fields
+    private char formType = 'C';
+    private string formNumber = "";
+    private string formDesc1 = "";
+    private string formDesc2 = "";
+
+    private string statusMessage = "";
+    private string statusMessageClass = "";
+
+    private CourseTitle? courseWithMembers = null;
+    private int assignedMemberCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCourses();
+    }
+
+    private async Task LoadCourses()
+    {
+        allCourses = await DbContext.CourseTitles
+            .OrderBy(c => c.CtType)
+            .ThenBy(c => c.CtNumber)
+            .ToListAsync();
+
+        FilterCourses();
+    }
+
+    private void FilterCourses()
+    {
+        if (string.IsNullOrWhiteSpace(searchText))
+        {
+            filteredCourses = allCourses;
+        }
+        else
+        {
+            filteredCourses = allCourses.Where(c =>
+                c.CtNumber.ToString().Contains(searchText) ||
+                (c.Desc1 != null && c.Desc1.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+                (c.Desc2 != null && c.Desc2.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            ).ToList();
+        }
+    }
+
+    private void ShowAddForm()
+    {
+        editingCourse = null;
+        showForm = true;
+        formType = 'C';
+        formNumber = "";
+        formDesc1 = "";
+        formDesc2 = "";
+        statusMessage = "";
+    }
+
+    private void EditCourse(CourseTitle course)
+    {
+        editingCourse = course;
+        showForm = true;
+        formType = course.CtType;
+        formNumber = course.CtNumber.ToString();
+        formDesc1 = course.Desc1 ?? "";
+        formDesc2 = course.Desc2 ?? "";
+        statusMessage = "";
+    }
+
+    private async Task SaveCourse()
+    {
+        // Validate
+        if (!short.TryParse(formNumber, out short num) || num < 1)
+        {
+            ShowStatus("Please enter a valid course number (1-32767)", "alert-danger");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(formDesc1))
+        {
+            ShowStatus("Description 1 is required", "alert-danger");
+            return;
+        }
+
+        try
+        {
+            if (editingCourse == null)
+            {
+                // Adding new
+                var exists = await DbContext.CourseTitles
+                    .AnyAsync(c => c.CtType == formType && c.CtNumber == num);
+
+                if (exists)
+                {
+                    ShowStatus($"{(formType == 'C' ? "Course" : "Title")} #{num} already exists!", "alert-danger");
+                    return;
+                }
+
+                var newCourse = new CourseTitle
+                {
+                    CtType = formType,
+                    CtNumber = num,
+                    Desc1 = formDesc1.Trim(),
+                    Desc2 = string.IsNullOrWhiteSpace(formDesc2) ? null : formDesc2.Trim()
+                };
+
+                DbContext.CourseTitles.Add(newCourse);
+                await DbContext.SaveChangesAsync();
+
+                ShowStatus($"✓ {(formType == 'C' ? "Course" : "Title")} #{num} added successfully", "alert-success");
+            }
+            else
+            {
+                // Editing existing
+                editingCourse.Desc1 = formDesc1.Trim();
+                editingCourse.Desc2 = string.IsNullOrWhiteSpace(formDesc2) ? null : formDesc2.Trim();
+
+                await DbContext.SaveChangesAsync();
+
+                ShowStatus($"✓ {(formType == 'C' ? "Course" : "Title")} #{num} updated successfully", "alert-success");
+            }
+
+            await LoadCourses();
+            CancelForm();
+        }
+        catch (Exception ex)
+        {
+            ShowStatus($"Error: {ex.Message}", "alert-danger");
+        }
+    }
+
+    private async Task DeleteCourse(CourseTitle course)
+    {
+        // Check if course is assigned to any members
+        var assignedCount = await DbContext.MemberCourses
+            .CountAsync(mc => mc.CtType == course.CtType && mc.CtNumber == course.CtNumber);
+
+        if (assignedCount > 0)
+        {
+            courseWithMembers = course;
+            assignedMemberCount = assignedCount;
+            ShowStatus($"Cannot delete: This {(course.CtType == 'C' ? "course" : "title")} is assigned to {assignedCount} member(s)", "alert-danger");
+            return;
+        }
+
+        // TODO: Add confirmation dialog
+        // For now, just delete
+        try
+        {
+            DbContext.CourseTitles.Remove(course);
+            await DbContext.SaveChangesAsync();
+
+            await LoadCourses();
+
+            StateHasChanged();
+
+            ShowStatus($"✓ {(course.CtType == 'C' ? "Course" : "Title")} #{course.CtNumber} deleted", "alert-success");
+        }
+        catch (Exception ex)
+        {
+            ShowStatus($"Error: {ex.Message}", "alert-danger");
+        }
+    }
+
+    private void CancelForm()
+    {
+        showForm = false;
+        editingCourse = null;
+    }
+
+    private void ShowStatus(string message, string cssClass)
+    {
+        statusMessage = message;
+        statusMessageClass = cssClass;
+
+        if (cssClass == "alert-success")
+        {
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(3000);
+                statusMessage = "";
+                await InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+
+    private void ShowMembersWithCourse()
+    {
+        if (courseWithMembers == null) return;
+
+        // Navigate to members page with a filter
+        Navigation.NavigateTo($"/members?courseFilter={courseWithMembers.CtType}{courseWithMembers.CtNumber}");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/members");
+    }
+
+
+}
