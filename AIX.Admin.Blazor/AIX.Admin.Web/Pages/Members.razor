@@ -73,8 +73,7 @@
                                        class="form-control"
                                        @bind="editMiddleName"
                                        tabindex="6"
-                                       maxlength="40"
-                                       disabled="@(!isEditing)" />
+                                       maxlength="40" />
                             </div>
                         </div>
                         @* Member Number Lookup *@
@@ -133,8 +132,7 @@
                                        class="form-control"
                                        @bind="editAddress1"
                                        tabindex="6"
-                                       maxlength="100"
-                                       disabled="@(!isEditing)" />
+                                       maxlength="100" />
                             </div>
                         </div>
 
@@ -159,8 +157,7 @@
                                        class="form-control"
                                        @bind="editCity"
                                        tabindex="8"
-                                       maxlength="60"
-                                       disabled="@(!isEditing)" />
+                                       maxlength="60" />
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-bold">State</label>
@@ -169,8 +166,7 @@
                                        @bind="editState"
                                        tabindex="9"
                                        maxlength="10"
-                                       style="text-transform: uppercase;"
-                                       disabled="@(!isEditing)" />
+                                       style="text-transform: uppercase;" />
                             </div>
                         </div>
 
@@ -182,8 +178,7 @@
                                        class="form-control"
                                        @bind="editEmail"
                                        tabindex="10"
-                                       maxlength="120"
-                                       disabled="@(!isEditing)" />
+                                       maxlength="120" />
                             </div>
                         </div>
 
@@ -543,6 +538,35 @@
                 hasSearchCriteria = true;
             }
         }
+
+        // MiddleName search
+        if (!string.IsNullOrWhiteSpace(editMiddleName))
+        {
+            query = query.Where(m => m.MiddleName != null && m.MiddleName.Contains(editMiddleName));
+            hasSearchCriteria = true;
+        }
+
+        // Email search
+        if (!string.IsNullOrWhiteSpace(editEmail))
+        {
+            query = query.Where(m => m.EmailAdr != null && m.EmailAdr.Contains(editEmail));
+            hasSearchCriteria = true;
+        }
+
+        // City search
+        if (!string.IsNullOrWhiteSpace(editCity))
+        {
+            query = query.Where(m => m.City != null && m.City.Contains(editCity));
+            hasSearchCriteria = true;
+        }
+
+        // Address1 search
+        if (!string.IsNullOrWhiteSpace(editAddress1))
+        {
+            query = query.Where(m => m.Address1 != null && m.Address1.Contains(editAddress1));
+            hasSearchCriteria = true;
+        }
+
         // NEW: Course/Title search
         if (!string.IsNullOrWhiteSpace(searchCourseNumber))
         {
