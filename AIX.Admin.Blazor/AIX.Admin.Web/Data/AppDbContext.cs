@@ -10,6 +10,7 @@ public class AppDbContext : DbContext
     public DbSet<Member> Members => Set<Member>();
     public DbSet<CourseTitle> CourseTitles { get; set; }
     public DbSet<MemberCourse> MemberCourses { get; set; }
+    public DbSet<MemberNote> MemberNotes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

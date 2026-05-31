@@ -72,9 +72,22 @@
                                 <input type="text"
                                        class="form-control"
                                        @bind="editMiddleName"
-                                       tabindex="5"
+                                       tabindex="6"
                                        maxlength="40"
                                        disabled="@(!isEditing)" />
+                            </div>
+                        </div>
+                        @* Member Number Lookup *@
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Member #</label>
+                                <input type="text"
+                                       class="form-control"
+                                       @bind="searchMemberNo"
+                                       tabindex="5"
+                                       maxlength="15"
+                                       placeholder="Enter member #" 
+                                       disabled="@(isEditing)"/>
                             </div>
                         </div>
 
@@ -352,6 +365,59 @@
             }
         </div>
     </div>
+    @if (currentMember != null)
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header"
+                         style="background-color: #343a40; color: white; cursor: pointer;"
+                         @onclick="async () => { showNotes = !showNotes; if (showNotes) await LoadNotes(); }">
+                        <strong>Notes</strong>
+                        <span class="float-end">@(showNotes ? "▲ Hide" : "▼ Show") (@memberNotes.Count)</span>
+                    </div>
+                    @if (showNotes)
+                    {
+                        <div class="card-body">
+                            @* Add new note *@
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <textarea class="form-control"
+                                              @bind="newNoteText"
+                                              rows="2"
+                                              maxlength="500"
+                                              placeholder="Enter a note..."></textarea>
+                                    <button class="btn btn-primary btn-sm mt-2"
+                                            @onclick="SaveNote"
+                                            disabled="@(string.IsNullOrWhiteSpace(newNoteText))">
+                                        Add Note
+                                    </button>
+                                </div>
+                            </div>
+                            @* Notes list *@
+                            @if (memberNotes.Any())
+                            {
+                                <div style="max-height: 300px; overflow-y: auto;">
+                                    @foreach (var note in memberNotes)
+                                    {
+                                        <div class="border-bottom pb-2 mb-2">
+                                            <small class="text-muted">@note.CreatedDttm.ToString("MM/dd/yyyy HH:mm")</small>
+                                            <div>@note.NoteText</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No notes yet.</p>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
 </div>
 
 @code {
@@ -373,6 +439,7 @@
     // Search fields
     // private string searchZipCode = "";
     private string searchLastName = "";
+    private string searchMemberNo = "";
 
     // Edit fields (bound to form)
     private string editZipCode = ""; // <-- FIX: Add missing declaration
@@ -407,6 +474,11 @@
     private bool showMoreFields = false;
     private string statusMessage = "";
     private string statusMessageClass = "";
+
+    // Member Notes
+    private List<MemberNote> memberNotes = new();
+    private string newNoteText = "";
+    private bool showNotes = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -462,7 +534,15 @@
             query = query.Where(m => m.FirstName != null && m.FirstName.Contains(editFirstName));
             hasSearchCriteria = true;
         }
-
+        // MemberNo search
+        if (!string.IsNullOrWhiteSpace(searchMemberNo))
+        {
+            if (int.TryParse(searchMemberNo, out int memberNo))
+            {
+                query = query.Where(m => m.MemberNo == memberNo);
+                hasSearchCriteria = true;
+            }
+        }
         // NEW: Course/Title search
         if (!string.IsNullOrWhiteSpace(searchCourseNumber))
         {
@@ -500,7 +580,7 @@
             .OrderBy(m => m.ZipCode)
             .ThenBy(m => m.LastName)
             .ThenBy(m => m.FirstName)
-            .Take(100)
+            .Take(500)
             .ToListAsync();
 
         // Auto-select first result if only one found
@@ -543,6 +623,12 @@
         editCongrNum2 = currentMember.CongrNum2?.ToString() ?? "";
         editForeignAddress = currentMember.ForeignAddress ?? "";
         editSameAdr = currentMember.SameAdr == 1;
+
+        _ = Task.Run(async () =>
+        {
+            await LoadNotes();
+            await InvokeAsync(StateHasChanged);
+        });
 
         StatusMessage("", "");
     }
@@ -612,6 +698,7 @@
         editFirstName = "";
         searchCourseType = "";      // NEW
         searchCourseNumber = "";    // NEW
+        searchMemberNo = "";       // NEW
         lookupCourseName = null;    // NEW
 
         // Clear results
@@ -735,6 +822,33 @@
             {
                 lookupCourseName = $"{(course.CtType == 'C' ? "Course" : "Title")} #{course.CtNumber}: {course.Desc1}";
             }
+    }
+
+    private async Task LoadNotes()
+    {
+        if (currentMember == null) return;
+        memberNotes = await DbContext.MemberNotes
+            .Where(n => n.MemberNo == currentMember.MemberNo)
+            .OrderByDescending(n => n.CreatedDttm)
+            .ToListAsync();
+    }
+
+    private async Task SaveNote()
+    {
+        if (currentMember == null || string.IsNullOrWhiteSpace(newNoteText)) return;
+    
+        var note = new MemberNote
+        {
+            MemberNo = currentMember.MemberNo,
+            NoteText = newNoteText,
+            CreatedDttm = DateTime.Now
+        };
+        
+        DbContext.MemberNotes.Add(note);
+        await DbContext.SaveChangesAsync();
+        
+        newNoteText = "";
+        await LoadNotes();
     }
 
     private void HandleResultsKeyPress(KeyboardEventArgs e)
